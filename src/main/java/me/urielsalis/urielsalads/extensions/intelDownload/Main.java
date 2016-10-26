@@ -23,7 +23,14 @@ import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 public class Main {
 
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
-    public static void init() {
+    public static void init(ExtensionAPI api) {
 
     }
+
+    @ExtensionAPI.ExtensionUnload("intel-download/1.0.0")
+    public static void unload(ExtensionAPI api) {
+
+    }
+
+
 }

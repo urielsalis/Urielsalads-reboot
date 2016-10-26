@@ -1,6 +1,8 @@
 package me.urielsalis.urielsalads.extensions.extensionLoader;
 
+import com.google.common.collect.Lists;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+import me.urielsalis.urielsalads.extensions.ExtensionAPI.Extension;
 import net.engio.mbassy.listener.Handler;
 import org.reflections.Configuration;
 import org.reflections.Reflections;
@@ -10,14 +12,17 @@ import org.reflections.util.ConfigurationBuilder;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import me.urielsalis.urielsalads.extensions.ExtensionAPI.Extension;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import static me.urielsalis.urielsalads.extensions.ExtensionAPI.prettyPrint;
 /*
 UrielSalads
@@ -39,8 +44,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 public class ExtensionHandler {
     // Gets module information in array for further processing
     private static ArrayList<ExtensionAPI.ExtensionData> extensions = new ArrayList<>();
-    private static ArrayList<ExtensionAPI.ExtensionData> orderToLoad = new ArrayList<>();
     public static ExtensionAPI api = new ExtensionAPI();
+    public static ArrayList<LoadOrder> steps = new ArrayList<>();
+    public static ArrayList<ExtensionAPI.ExtensionData> alreadyLoaded = new ArrayList<>();
 
     public static void loadExtensions() {
         System.out.println("Loading extensions for Urielsalads");
@@ -82,8 +88,6 @@ public class ExtensionHandler {
     }
 
     public static void unloadExtension(ExtensionAPI.ExtensionData data) {
-        extensions.remove(data);
-        orderToLoad.remove(data);
         System.out.println("Unloading " + data.extension.id());
         // Avoid Class.newInstance, for it is evil.
         Class<?> klass = data.clazz;
@@ -144,72 +148,100 @@ public class ExtensionHandler {
     }
 
     private static void runExtensions() {
-        for(ExtensionAPI.ExtensionData data: orderToLoad) {
-            loadExtension(data);
+        for(LoadOrder order: steps) {
+            List<Callable<Object>> callables = new ArrayList<>();
+            for(final ExtensionAPI.ExtensionData data: order.extensions) {
+                callables.add(new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        System.out.println("Loading " + data.extension.id());
+                        loadExtension(data);
+                        System.out.println(data.extension.id() + " Loaded");
+                        return null;
+                    }
+                });
+            }
+            ExecutorService service = Executors.newCachedThreadPool();
+            try {
+                service.invokeAll(callables);
+                while(service.awaitTermination(1, TimeUnit.SECONDS)) { //Wait till all threads finished
+                    service.awaitTermination(1, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     private static void sortLoading() {
         System.out.print("Dependency loading order");
-        for(ExtensionAPI.ExtensionData extensionData: extensions) {
+        ArrayList<ExtensionAPI.ExtensionData> toLoad = Lists.newArrayList(extensions);
+        LoadOrder order = new LoadOrder();
+        int counter = 1;
+        System.out.println("Step " + counter);
+        for(ExtensionAPI.ExtensionData extensionData: toLoad) {
             String[] dependencies = extensionData.extension.dependencies();
-            if(dependencies.length==0) orderToLoad.add(extensionData);
-            else {
-                checkDependencies(extensionData, dependencies, null);
+            if(dependencies.length==0) {
+                order.extensions.add(extensionData);
+                alreadyLoaded.add(extensionData);
+                System.out.print("  " + extensionData.extension.id());
             }
         }
-        System.out.println();
-        if(extensions.size() != orderToLoad.size()) {
-            System.out.println("Not all dependencies could be loaded");
-            System.out.println("To load: " + prettyPrint(extensions));
-            System.out.println("Loaded: " + prettyPrint(orderToLoad));
-            System.exit(1);
+        steps.add(order);
+        counter++;
+        for(ExtensionAPI.ExtensionData loaded: alreadyLoaded) {
+            toLoad.remove(loaded);
         }
+        while(alreadyLoaded.size() != extensions.size()) {
+            System.out.println("Step " + counter);
+            LoadOrder step = new LoadOrder();
+            for(ExtensionAPI.ExtensionData data: toLoad) {
+                if(dependenciesMet(data)) {
+                    step.extensions.add(data);
+                    alreadyLoaded.add(data);
+                    System.out.print("  " + data.extension.id());
+                }
+            }
+            if(step.extensions.isEmpty()) {
+                System.out.println("Cant solve dependencies");
+                System.out.println("All extensions: " + prettyPrint(extensions));
+                System.out.println("Loaded Extensions: " + prettyPrint(alreadyLoaded));
+                System.out.println("Left: " + prettyPrint(toLoad));
+                System.exit(1);
+            }
+            counter++;
+        }
+        counter--;
+        System.out.println("Loading possible in " + counter + " steps");
     }
 
-    private static void checkDependencies(ExtensionAPI.ExtensionData extensionData, String[] dependencies, String version) {
-        if (dependencies.length == 0 && (version == null || version.endsWith("+") && isEqualOrHigher(extensionData.extension.version(), version) || version.endsWith("-") && isEqualOrHigher(version, extensionData.extension.version()) || version.equals(extensionData.extension.version()))) {
-            orderToLoad.add(extensionData);
-            System.out.print(" -> " + extensionData.extension.name() + " " + extensionData.extension.version());
-        }
-        for(String string: dependencies) {
+    private static boolean dependenciesMet(ExtensionAPI.ExtensionData data) {
+        String[] dependencies = data.extension.dependencies();
+        for(String dependency: dependencies) {
             String nameToSearch;
             String versiontoSearch = null;
-            if(string.contains("/")) {
-                String[] temp = string.split("/");
+            if(dependency.contains("/")) {
+                String[] temp = dependency.split("/");
                 nameToSearch = temp[0];
                 versiontoSearch = temp[1];
             } else {
-                nameToSearch = string;
-            }
-            if(!alreadyLoaded(nameToSearch, versiontoSearch)) {
-                ExtensionAPI.ExtensionData data = getExtensionData(nameToSearch, versiontoSearch);
-                checkDependencies(data, data.extension.dependencies(), data.extension.version());
-            }
-        }
-        if(allDependenciesMet(dependencies)) {
-            orderToLoad.add(extensionData);
-            System.out.print(" -> " + extensionData.extension.name() + " " + extensionData.extension.version());
-        } else {
-            System.out.println("\nMissing dependencies of " + extensionData.extension.id());
-            System.exit(1);
-        }
-    }
-
-    private static boolean allDependenciesMet(String[] dependencies) {
-        for(String string: dependencies) {
-            String nameToSearch;
-            String versiontoSearch = null;
-            if(string.contains("/")) {
-                String[] temp = string.split("/");
-                nameToSearch = temp[0];
-                versiontoSearch = temp[1];
-            } else {
-                nameToSearch = string;
+                nameToSearch = dependency;
             }
             if(!alreadyLoaded(nameToSearch, versiontoSearch)) return false;
         }
         return true;
+    }
+
+    private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
+        for(ExtensionAPI.ExtensionData data: alreadyLoaded) {
+            if(data.extension.name().equals(nameToSearch)) {
+                if(versiontoSearch==null) return true;
+                else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return true;
+                else if(versiontoSearch.contains("-") && isEqualOrHigher(versiontoSearch, data.extension.version())) return true;
+                else if(versiontoSearch.equals(data.extension.version())) return true;
+            }
+        }
+        return false;
     }
 
     private static ExtensionAPI.ExtensionData getExtensionData(String nameToSearch, String versiontoSearch) {
@@ -226,17 +258,6 @@ public class ExtensionHandler {
         return null;
     }
 
-    private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
-        for(ExtensionAPI.ExtensionData data: orderToLoad) {
-            if(data.extension.name().equals(nameToSearch)) {
-                if(versiontoSearch==null) return true;
-                else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return true;
-                else if(versiontoSearch.contains("-") && isEqualOrHigher(versiontoSearch, data.extension.version())) return true;
-                else if(versiontoSearch.equals(data.extension.version())) return true;
-            }
-        }
-        return false;
-    }
 
     private static boolean isEqualOrHigher(String version1, String version2) {
         if(version1.equals(version2)) return true;
@@ -305,6 +326,14 @@ public class ExtensionHandler {
         @Override
         public String name() {
             return "ExtensionHandler/UnloadExtensionListener";
+        }
+    }
+
+    private static class LoadOrder {
+        public ArrayList<ExtensionAPI.ExtensionData> extensions;
+
+        public LoadOrder() {
+            extensions = new ArrayList<>();
         }
     }
 }

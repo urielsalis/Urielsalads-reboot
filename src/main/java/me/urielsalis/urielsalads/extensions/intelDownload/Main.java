@@ -1,6 +1,6 @@
-package me.urielsalis.urielsalads.extensions.base;
+package me.urielsalis.urielsalads.extensions.intelDownload;
 
-import java.lang.reflect.Method;
+import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 
 /**
  * UrielSalads
@@ -19,12 +19,11 @@ import java.lang.reflect.Method;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class Util {
-    public static Method getMethod(Class<Main> mainClass, String methodName) {
-        Method[] methods = mainClass.getMethods();
-        for(Method method: methods) {
-            if(method.getName().equals(methodName)) return method;
-        }
-        return null;
+@ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"base"}, id = "intel-download/1.0.0")
+public class Main {
+
+    @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
+    public static void init() {
+
     }
 }

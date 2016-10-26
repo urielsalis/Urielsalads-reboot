@@ -33,7 +33,6 @@ Modules:
 	json-search: Searchs for the driver in the json from intel-download(re-read each time)
 	intel-commands: Commands to modify the json and add edgecases
 
-
 json:
 	thingToMatch: {windows732, windows764, windows832, windows864, ..., priority} stores epm ids of each download. Priority: higher is better, default is 0
 

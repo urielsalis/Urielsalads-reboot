@@ -1,6 +1,7 @@
 package me.urielsalis.urielsalads.extensions.extensionLoader;
 
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+import net.engio.mbassy.listener.Handler;
 import org.reflections.Configuration;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
@@ -17,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI.Extension;
-
+import static me.urielsalis.urielsalads.extensions.ExtensionAPI.prettyPrint;
 /*
 UrielSalads
 Copyright (C) 2016 Uriel Salischiker
@@ -37,24 +38,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class ExtensionHandler {
     // Gets module information in array for further processing
-    public static ArrayList<ExtensionData> extensions = new ArrayList<>();
-    public static ArrayList<ExtensionData> orderToLoad = new ArrayList<>();
+    private static ArrayList<ExtensionAPI.ExtensionData> extensions = new ArrayList<>();
+    private static ArrayList<ExtensionAPI.ExtensionData> orderToLoad = new ArrayList<>();
     public static ExtensionAPI api = new ExtensionAPI();
 
     public static void loadExtensions() {
         System.out.println("Loading extensions for Urielsalads");
+        try {
+            api.registerEvent("onListenerRegistered");
+            api.registerEvent("onExtensionLoad"); //this can be used to replace a event of another class, wont use it but its good for people that want to do it :)
+            api.registerEvent("onExtensionUnload");
+        } catch (ExtensionAPI.EventAlreadyExistsException e) {
+            e.printStackTrace();
+        }
         loadJars();
         Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath());
 
         Reflections reflections = new Reflections(configuration);
         Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Extension.class);
-        for(Class clazz: annotated) extensions.add(new ExtensionData((Extension) clazz.getAnnotation(Extension.class), clazz));
+        for(Class clazz: annotated) extensions.add(new ExtensionAPI.ExtensionData((Extension) clazz.getAnnotation(Extension.class), clazz));
         System.out.println("Extensions to load: " + prettyPrint(extensions));
+        for(ExtensionAPI.ExtensionData extensionData: extensions) {
+            api.avaliableExtensions.add(extensionData.extension);
+        }
         sortLoading();
         runExtensions();
+        initEvents();
     }
 
-    public static void unloadExtension(ExtensionData data) {
+    private static void initEvents() {
+        try {
+            api.registerEvent("loadExtension");
+            api.registerEvent("unloadExtension");
+        } catch (ExtensionAPI.EventAlreadyExistsException e) {
+            e.printStackTrace();
+        }
+        try {
+            api.registerListener("loadExtension", new LoadExtensionListener());
+            api.registerListener("unloadExtension", new UnloadExtensionListener());
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void unloadExtension(ExtensionAPI.ExtensionData data) {
         extensions.remove(data);
         orderToLoad.remove(data);
         System.out.println("Unloading " + data.extension.id());
@@ -78,9 +105,15 @@ public class ExtensionHandler {
             // move to the upper class in the hierarchy in search for more methods
             klass = klass.getSuperclass();
         }
+        api.loadedExtensions.remove(data.extension);
+        try {
+            api.fire("onExtensionUnload", data.extension);
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static void loadExtension(ExtensionData data) {
+    public static void loadExtension(ExtensionAPI.ExtensionData data) {
         System.out.println("Running init " + data.extension.id());
         // Avoid Class.newInstance, for it is evil.
         Class<?> klass = data.clazz;
@@ -102,25 +135,23 @@ public class ExtensionHandler {
             // move to the upper class in the hierarchy in search for more methods
             klass = klass.getSuperclass();
         }
+        api.loadedExtensions.add(data.extension);
+        try {
+            api.fire("onExtensionLoad", data.extension);
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void runExtensions() {
-        for(ExtensionData data: orderToLoad) {
+        for(ExtensionAPI.ExtensionData data: orderToLoad) {
             loadExtension(data);
         }
     }
 
-    private static String prettyPrint(ArrayList<ExtensionData> extensions) {
-        StringBuilder builder = new StringBuilder();
-        for(ExtensionData data: extensions) {
-            builder.append(", " + data.extension.name() + " " + data.extension.version());
-        }
-        return builder.substring(2);
-    }
-
     private static void sortLoading() {
         System.out.print("Dependency loading order");
-        for(ExtensionData extensionData: extensions) {
+        for(ExtensionAPI.ExtensionData extensionData: extensions) {
             String[] dependencies = extensionData.extension.dependencies();
             if(dependencies.length==0) orderToLoad.add(extensionData);
             else {
@@ -136,7 +167,7 @@ public class ExtensionHandler {
         }
     }
 
-    private static void checkDependencies(ExtensionData extensionData, String[] dependencies, String version) {
+    private static void checkDependencies(ExtensionAPI.ExtensionData extensionData, String[] dependencies, String version) {
         if (dependencies.length == 0 && (version == null || version.endsWith("+") && isEqualOrHigher(extensionData.extension.version(), version) || version.endsWith("-") && isEqualOrHigher(version, extensionData.extension.version()) || version.equals(extensionData.extension.version()))) {
             orderToLoad.add(extensionData);
             System.out.print(" -> " + extensionData.extension.name() + " " + extensionData.extension.version());
@@ -152,7 +183,7 @@ public class ExtensionHandler {
                 nameToSearch = string;
             }
             if(!alreadyLoaded(nameToSearch, versiontoSearch)) {
-                ExtensionData data = getExtensionData(nameToSearch, versiontoSearch);
+                ExtensionAPI.ExtensionData data = getExtensionData(nameToSearch, versiontoSearch);
                 checkDependencies(data, data.extension.dependencies(), data.extension.version());
             }
         }
@@ -181,8 +212,8 @@ public class ExtensionHandler {
         return true;
     }
 
-    private static ExtensionData getExtensionData(String nameToSearch, String versiontoSearch) {
-        for(ExtensionData data: extensions) {
+    private static ExtensionAPI.ExtensionData getExtensionData(String nameToSearch, String versiontoSearch) {
+        for(ExtensionAPI.ExtensionData data: extensions) {
             if(data.extension.name().equals(nameToSearch)) {
                 if(versiontoSearch==null) return data;
                 else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return data;
@@ -196,7 +227,7 @@ public class ExtensionHandler {
     }
 
     private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
-        for(ExtensionData data: orderToLoad) {
+        for(ExtensionAPI.ExtensionData data: orderToLoad) {
             if(data.extension.name().equals(nameToSearch)) {
                 if(versiontoSearch==null) return true;
                 else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return true;
@@ -249,4 +280,31 @@ public class ExtensionHandler {
         Runnable doRun = ctor.newInstance();
         doRun.run();
     }*/
+
+    public static class LoadExtensionListener implements ExtensionAPI.Listener {
+        @Handler
+        public void loadExtension(Extension extension) {
+            ExtensionAPI.ExtensionData data = ExtensionHandler.getExtensionData(extension.name(), extension.version());
+            ExtensionHandler.loadExtension(data);
+        }
+
+        @Override
+        public String name() {
+            return "ExtensionHandler/LoadExtensionListener";
+        }
+    }
+
+    public static class UnloadExtensionListener implements ExtensionAPI.Listener {
+        @Handler
+        public void unloadExtension(Extension extension) {
+            ExtensionAPI.ExtensionData data = ExtensionHandler.getExtensionData(extension.name(), extension.version());
+            ExtensionHandler.unloadExtension(data);
+        }
+
+
+        @Override
+        public String name() {
+            return "ExtensionHandler/UnloadExtensionListener";
+        }
+    }
 }

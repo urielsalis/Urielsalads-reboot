@@ -38,7 +38,7 @@ public class Main {
     private static ExtensionAPI extapi;
     private static IRCConfig ircConfig;
 
-    @ExtensionAPI.ExtensionInit("commands/1.0.0")
+    @ExtensionAPI.ExtensionInit("irc/1.0.0")
     public static void init(ExtensionAPI extapi) {
         Main.extapi = extapi;
         Main.api = new IRCApiImpl(true);
@@ -60,6 +60,36 @@ public class Main {
                 throw new RuntimeException(aErrorMessage);
             }
         });
+    }
+
+    @ExtensionAPI.ExtensionUnload("irc/1.0.0")
+    public static void unload(ExtensionAPI extapi) {
+        try {
+            extapi.unregisterListener("commandEvent", "commands/1.0.0/CommandListener");
+            extapi.unRegisterEvent("commandEvent");
+            extapi.unRegisterEvent("onUserPing");
+            extapi.unRegisterEvent("onUserVersion");
+            extapi.unRegisterEvent("onServerPing");
+            extapi.unRegisterEvent("onMessage");
+            extapi.unRegisterEvent("onChannelJoin");
+            extapi.unRegisterEvent("onChannelPart");
+            extapi.unRegisterEvent("onChannelNotice");
+            extapi.unRegisterEvent("onChannelAction");
+            extapi.unRegisterEvent("onChannelKick");
+            extapi.unRegisterEvent("onMessage");
+            extapi.unRegisterEvent("onTopicChange");
+            extapi.unRegisterEvent("onUserPrivMessage");
+            extapi.unRegisterEvent("onUserNotice");
+            extapi.unRegisterEvent("onUserAction");
+            extapi.unRegisterEvent("onServerNumericAction");
+            extapi.unRegisterEvent("onServerNotice");
+            extapi.unRegisterEvent("onNickChange");
+            extapi.unRegisterEvent("onUserQuit");
+            extapi.unRegisterEvent("onError");
+            extapi.unRegisterEvent("onChannelMode");
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void continueLoad() {
@@ -214,6 +244,22 @@ public class Main {
             this.args = args;
             this.channel = channel;
             this.fromUser = fromUser;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String[] getArgs() {
+            return args;
+        }
+
+        public String getFromUser() {
+            return fromUser;
+        }
+
+        public String getChannel() {
+            return channel;
         }
     }
 

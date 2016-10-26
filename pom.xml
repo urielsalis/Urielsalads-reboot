@@ -51,6 +51,12 @@
             <version>1.0.8</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.moandjiezana.toml</groupId>
+            <artifactId>toml4j</artifactId>
+            <version>0.7.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>

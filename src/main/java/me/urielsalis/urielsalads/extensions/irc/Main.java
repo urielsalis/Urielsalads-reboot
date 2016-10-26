@@ -88,6 +88,10 @@ public class Main {
 
             api.addListener(new Listeners());
             api.message("NickServ", "identify " + ircConfig.nick1() + " " + ircConfig.password());
+            String[] channels = ircConfig.joinChannels().split(" ");
+            for(String channel: channels) {
+                api.joinChannel(channel);
+            }
         } catch (ExtensionAPI.EventAlreadyExistsException e) {
             e.printStackTrace();
         }

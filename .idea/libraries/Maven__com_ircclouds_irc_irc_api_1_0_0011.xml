@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.ircclouds.irc:irc-api:1.0-0011">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ircclouds/irc/irc-api/1.0-0011/irc-api-1.0-0011.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ircclouds/irc/irc-api/1.0-0011/irc-api-1.0-0011-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/ircclouds/irc/irc-api/1.0-0011/irc-api-1.0-0011-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

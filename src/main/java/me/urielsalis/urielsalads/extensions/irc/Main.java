@@ -72,6 +72,7 @@ public class Main {
             extapi.registerEvent("onChannelNotice");
             extapi.registerEvent("onChannelAction");
             extapi.registerEvent("onChannelKick");
+            extapi.registerEvent("onMessage");
             extapi.registerEvent("onTopicChange");
             extapi.registerEvent("onUserPrivMessage");
             extapi.registerEvent("onUserNotice");
@@ -104,11 +105,12 @@ public class Main {
         }
 
         public void onMessage(IMessage aMessage) {
+            try { extapi.fire("onMessage", aMessage); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
 
         }
 
         public void onChannelMessage(ChannelPrivMsg aMsg) {
-            try { extapi.fire("onChannelMessage", aMsg); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try { extapi.fire("onChannelMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg)); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onChannelJoin(ChanJoinMessage aMsg) {
@@ -136,7 +138,7 @@ public class Main {
         }
 
         public void onUserPrivMessage(UserPrivMsg aMsg) {
-            try { extapi.fire("onUserPrivMessage", aMsg); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try { extapi.fire("onUserPrivMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg));} catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onUserNotice(UserNotice aMsg) {

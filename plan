@@ -1,18 +1,18 @@
 Startup: Load all classes that implement @Module and are in packet me.urielsalis.urielsalads.extensions and get their data
-Create a loading tree accoridng to dependencies. check which packets can be loaded in parallel
+Create a loading tree accoridng to dependencies
 Run init() in order of all modules
 Populate missing EventHandles from all modules
 Fire LoadFinished Event to all modules
 
 
-@Module(name="testModule", version="1.0.3", dependencies="base, otherModule", id="testModule-1.0.3")
+@Extension(name="testModule", version="1.0.3", dependencies="base, otherModule", id="testModule-1.0.3")
 public class testModule {
-	@ModuleInit(id="testModule-1.0.3")
+	@ExtensionInit(id="testModule-1.0.3")
 	public static void init() {
 		//run init of module here
 	}
 
-	@ModuleUnload(id="testModule-1.0.3")
+	@ExtensionUnload(id="testModule-1.0.3")
 	public static void unload() {
 		//run when module is being unload, to do all unload tasks
 	}

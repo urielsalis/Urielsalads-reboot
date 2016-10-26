@@ -1,5 +1,6 @@
 package me.urielsalis.urielsalads.extensions.extensionLoader;
 
+import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import org.reflections.Configuration;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
@@ -8,11 +9,14 @@ import org.reflections.util.ConfigurationBuilder;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import me.urielsalis.urielsalads.extensions.ExtensionAPI.Extension;
 
 /*
 UrielSalads
@@ -35,6 +39,7 @@ public class ExtensionHandler {
     // Gets module information in array for further processing
     public static ArrayList<ExtensionData> extensions = new ArrayList<>();
     public static ArrayList<ExtensionData> orderToLoad = new ArrayList<>();
+    public static ExtensionAPI api = new ExtensionAPI();
 
     public static void loadExtensions() {
         System.out.println("Loading extensions for Urielsalads");
@@ -46,6 +51,63 @@ public class ExtensionHandler {
         for(Class clazz: annotated) extensions.add(new ExtensionData((Extension) clazz.getAnnotation(Extension.class), clazz));
         System.out.println("Extensions to load: " + prettyPrint(extensions));
         sortLoading();
+        runExtensions();
+    }
+
+    public static void unloadExtension(ExtensionData data) {
+        extensions.remove(data);
+        orderToLoad.remove(data);
+        System.out.println("Unloading " + data.extension.id());
+        // Avoid Class.newInstance, for it is evil.
+        Class<?> klass = data.clazz;
+        while (klass != Object.class) { // need to iterated thought hierarchy in order to retrieve methods from above the current instance
+            // iterate though the list of methods declared in the class represented by klass variable, and add those annotated with the specified annotation
+            final List<Method> allMethods = new ArrayList<Method>(Arrays.asList(klass.getDeclaredMethods()));
+            for (final Method method : allMethods) {
+                if (method.isAnnotationPresent(ExtensionAPI.ExtensionUnload.class)) {
+                    try {
+                        System.out.println("Invoking " + method.getName());
+                        method.invoke(null, api); //invoker is null as its static
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        System.out.println("Error while trying to run method");
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+            }
+            // move to the upper class in the hierarchy in search for more methods
+            klass = klass.getSuperclass();
+        }
+    }
+
+    public static void loadExtension(ExtensionData data) {
+        System.out.println("Running init " + data.extension.id());
+        // Avoid Class.newInstance, for it is evil.
+        Class<?> klass = data.clazz;
+        while (klass != Object.class) { // need to iterated thought hierarchy in order to retrieve methods from above the current instance
+            // iterate though the list of methods declared in the class represented by klass variable, and add those annotated with the specified annotation
+            final List<Method> allMethods = new ArrayList<Method>(Arrays.asList(klass.getDeclaredMethods()));
+            for (final Method method : allMethods) {
+                if (method.isAnnotationPresent(ExtensionAPI.ExtensionInit.class)) {
+                    try {
+                        System.out.println("Invoking " + method.getName());
+                        method.invoke(null, api); //invoker is null as its static
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        System.out.println("Error while trying to run method");
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+            }
+            // move to the upper class in the hierarchy in search for more methods
+            klass = klass.getSuperclass();
+        }
+    }
+
+    private static void runExtensions() {
+        for(ExtensionData data: orderToLoad) {
+            loadExtension(data);
+        }
     }
 
     private static String prettyPrint(ArrayList<ExtensionData> extensions) {
@@ -130,6 +192,7 @@ public class ExtensionHandler {
         }
         System.out.println("\nDependency " + nameToSearch + " " + versiontoSearch + " not found. Exiting");
         System.exit(1);
+        return null;
     }
 
     private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
@@ -174,8 +237,8 @@ public class ExtensionHandler {
         }
     }
 
-    public static void initModules() {
-        /*ClassLoader loader = URLClassLoader.newInstance(
+    /*public static void initModules() {
+        ClassLoader loader = URLClassLoader.newInstance(
                 new URL[] { yourURL },
                 getClass().getClassLoader()
         );
@@ -185,6 +248,5 @@ public class ExtensionHandler {
         Constructor<? extends Runnable> ctor = runClass.getConstructor();
         Runnable doRun = ctor.newInstance();
         doRun.run();
-*/
-    }
+    }*/
 }

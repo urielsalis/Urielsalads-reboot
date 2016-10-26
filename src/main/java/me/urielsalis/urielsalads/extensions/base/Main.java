@@ -1,7 +1,5 @@
 package me.urielsalis.urielsalads.extensions.base;
 
-import me.urielsalis.urielsalads.extensions.extensionLoader.Extension;
-
 
 /*
 UrielSalads
@@ -21,7 +19,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-@Extension(name="base", version="1.0", id="base/1.0")
-public class Main {
+import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 
+@ExtensionAPI.Extension(name="base", version="1.0", id="base/1.0")
+public class Main {
+    @ExtensionAPI.ExtensionInit("base/1.0")
+    public static void init(ExtensionAPI api) {
+
+    }
 }

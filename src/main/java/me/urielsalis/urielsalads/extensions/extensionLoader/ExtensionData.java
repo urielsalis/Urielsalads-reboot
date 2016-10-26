@@ -1,5 +1,7 @@
 package me.urielsalis.urielsalads.extensions.extensionLoader;
 
+import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+
 /*
 UrielSalads
 Copyright (C) 2016 Uriel Salischiker
@@ -18,10 +20,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class ExtensionData {
-    Extension extension;
+    ExtensionAPI.Extension extension;
     Class clazz;
 
-    public ExtensionData(Extension extension, Class clazz) {
+    public ExtensionData(ExtensionAPI.Extension extension, Class clazz) {
         this.extension = extension;
         this.clazz = clazz;
     }
@@ -30,12 +32,12 @@ public class ExtensionData {
 
     }
 
-    public Extension getExtension() {
+    public ExtensionAPI.Extension getExtension() {
 
         return extension;
     }
 
-    public void setExtension(Extension extension) {
+    public void setExtension(ExtensionAPI.Extension extension) {
         this.extension = extension;
     }
 

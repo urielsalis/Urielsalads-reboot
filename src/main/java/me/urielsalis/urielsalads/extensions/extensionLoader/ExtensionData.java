@@ -18,4 +18,32 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class ExtensionData {
+    Extension extension;
+    Class clazz;
+
+    public ExtensionData(Extension extension, Class clazz) {
+        this.extension = extension;
+        this.clazz = clazz;
+    }
+
+    public ExtensionData() {
+
+    }
+
+    public Extension getExtension() {
+
+        return extension;
+    }
+
+    public void setExtension(Extension extension) {
+        this.extension = extension;
+    }
+
+    public Class getClazz() {
+        return clazz;
+    }
+
+    public void setClazz(Class clazz) {
+        this.clazz = clazz;
+    }
 }

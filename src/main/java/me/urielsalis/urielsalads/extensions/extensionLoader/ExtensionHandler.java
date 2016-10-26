@@ -33,13 +33,125 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class ExtensionHandler {
     // Gets module information in array for further processing
-    ArrayList<ExtensionData> extensions = new ArrayList<>();
+    public static ArrayList<ExtensionData> extensions = new ArrayList<>();
+    public static ArrayList<ExtensionData> orderToLoad = new ArrayList<>();
+
     public static void loadExtensions() {
+        System.out.println("Loading extensions for Urielsalads");
         loadJars();
         Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath());
 
         Reflections reflections = new Reflections(configuration);
         Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Extension.class);
+        for(Class clazz: annotated) extensions.add(new ExtensionData((Extension) clazz.getAnnotation(Extension.class), clazz));
+        System.out.println("Extensions to load: " + prettyPrint(extensions));
+        sortLoading();
+    }
+
+    private static String prettyPrint(ArrayList<ExtensionData> extensions) {
+        StringBuilder builder = new StringBuilder();
+        for(ExtensionData data: extensions) {
+            builder.append(", " + data.extension.name() + " " + data.extension.version());
+        }
+        return builder.substring(2);
+    }
+
+    private static void sortLoading() {
+        System.out.print("Dependency loading order");
+        for(ExtensionData extensionData: extensions) {
+            String[] dependencies = extensionData.extension.dependencies();
+            if(dependencies.length==0) orderToLoad.add(extensionData);
+            else {
+                checkDependencies(extensionData, dependencies, null);
+            }
+        }
+        System.out.println();
+        if(extensions.size() != orderToLoad.size()) {
+            System.out.println("Not all dependencies could be loaded");
+            System.out.println("To load: " + prettyPrint(extensions));
+            System.out.println("Loaded: " + prettyPrint(orderToLoad));
+            System.exit(1);
+        }
+    }
+
+    private static void checkDependencies(ExtensionData extensionData, String[] dependencies, String version) {
+        if (dependencies.length == 0 && (version == null || version.endsWith("+") && isEqualOrHigher(extensionData.extension.version(), version) || version.endsWith("-") && isEqualOrHigher(version, extensionData.extension.version()) || version.equals(extensionData.extension.version()))) {
+            orderToLoad.add(extensionData);
+            System.out.print(" -> " + extensionData.extension.name() + " " + extensionData.extension.version());
+        }
+        for(String string: dependencies) {
+            String nameToSearch;
+            String versiontoSearch = null;
+            if(string.contains("/")) {
+                String[] temp = string.split("/");
+                nameToSearch = temp[0];
+                versiontoSearch = temp[1];
+            } else {
+                nameToSearch = string;
+            }
+            if(!alreadyLoaded(nameToSearch, versiontoSearch)) {
+                ExtensionData data = getExtensionData(nameToSearch, versiontoSearch);
+                checkDependencies(data, data.extension.dependencies(), data.extension.version());
+            }
+        }
+        if(allDependenciesMet(dependencies)) {
+            orderToLoad.add(extensionData);
+            System.out.print(" -> " + extensionData.extension.name() + " " + extensionData.extension.version());
+        } else {
+            System.out.println("\nMissing dependencies of " + extensionData.extension.id());
+            System.exit(1);
+        }
+    }
+
+    private static boolean allDependenciesMet(String[] dependencies) {
+        for(String string: dependencies) {
+            String nameToSearch;
+            String versiontoSearch = null;
+            if(string.contains("/")) {
+                String[] temp = string.split("/");
+                nameToSearch = temp[0];
+                versiontoSearch = temp[1];
+            } else {
+                nameToSearch = string;
+            }
+            if(!alreadyLoaded(nameToSearch, versiontoSearch)) return false;
+        }
+        return true;
+    }
+
+    private static ExtensionData getExtensionData(String nameToSearch, String versiontoSearch) {
+        for(ExtensionData data: extensions) {
+            if(data.extension.name().equals(nameToSearch)) {
+                if(versiontoSearch==null) return data;
+                else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return data;
+                else if(versiontoSearch.contains("-") && isEqualOrHigher(versiontoSearch, data.extension.version())) return data;
+                else if(versiontoSearch.equals(data.extension.version())) return data;
+            }
+        }
+        System.out.println("\nDependency " + nameToSearch + " " + versiontoSearch + " not found. Exiting");
+        System.exit(1);
+    }
+
+    private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
+        for(ExtensionData data: orderToLoad) {
+            if(data.extension.name().equals(nameToSearch)) {
+                if(versiontoSearch==null) return true;
+                else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return true;
+                else if(versiontoSearch.contains("-") && isEqualOrHigher(versiontoSearch, data.extension.version())) return true;
+                else if(versiontoSearch.equals(data.extension.version())) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isEqualOrHigher(String version1, String version2) {
+        if(version1.equals(version2)) return true;
+        String[] version1Data = version1.split(".");
+        String[] version2Data = version2.split(".");
+        for (int i = 0; i < version1Data.length; i++) {
+            if(Integer.parseInt(version1Data[i]) > Integer.parseInt(version2Data[i])) return true;
+        }
+        return false;
     }
 
     private static void loadJars() {
@@ -49,6 +161,7 @@ public class ExtensionHandler {
         if (files != null) {
             for (File file : files) {
                 try {
+                    System.out.println("Loading .jar: " + file.getName());
                     ClassPathHacker.addFile(file);
                 } catch (IOException e) {
                     System.out.println("This should never happen, this is bad");

@@ -9,6 +9,7 @@ import com.ircclouds.irc.api.domain.messages.*;
 import com.ircclouds.irc.api.domain.messages.interfaces.IMessage;
 import com.ircclouds.irc.api.listeners.VariousMessageListenerAdapter;
 import com.ircclouds.irc.api.state.IIRCState;
+import com.sun.deploy.util.ArrayUtil;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import org.aeonbits.owner.ConfigFactory;
 import java.util.Arrays;
@@ -35,13 +36,14 @@ import java.util.List;
 public class Main {
     public static IRCApi api;
     private static ExtensionAPI extapi;
+    private static IRCConfig ircConfig;
 
     @ExtensionAPI.ExtensionInit("commands/1.0.0")
     public static void init(ExtensionAPI extapi) {
         Main.extapi = extapi;
         Main.api = new IRCApiImpl(true);
         System.out.println("Reading configs");
-        IRCConfig ircConfig = ConfigFactory.create(IRCConfig.class);
+        ircConfig = ConfigFactory.create(IRCConfig.class);
         System.out.println("Starting IRC");
         api.connect(getServerParams(ircConfig.nick1(), Arrays.asList(ircConfig.nick2(), ircConfig.nick3()), ircConfig.realName(), ircConfig.ident(), ircConfig.server(), true), new Callback<IIRCState>()
         {
@@ -85,6 +87,7 @@ public class Main {
             extapi.registerEvent("onChannelMode");
 
             api.addListener(new Listeners());
+            api.message("NickServ", "identify " + ircConfig.nick1() + " " + ircConfig.password());
         } catch (ExtensionAPI.EventAlreadyExistsException e) {
             e.printStackTrace();
         }
@@ -110,7 +113,7 @@ public class Main {
         }
 
         public void onChannelMessage(ChannelPrivMsg aMsg) {
-            try { extapi.fire("onChannelMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg)); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try { extapi.fire("onChannelMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg, aMsg.getChannelName())); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onChannelJoin(ChanJoinMessage aMsg) {
@@ -138,7 +141,7 @@ public class Main {
         }
 
         public void onUserPrivMessage(UserPrivMsg aMsg) {
-            try { extapi.fire("onUserPrivMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg));} catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try { extapi.fire("onUserPrivMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg, null));} catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onUserNotice(UserNotice aMsg) {
@@ -172,16 +175,41 @@ public class Main {
         public void onChannelMode(ChannelModeMessage aMsg) {
             try { extapi.fire("onChannelMode", aMsg); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
+
+        private Command parseCommand(AbstractPrivMsg aMsg, String channel) {
+            String text = aMsg.getText();
+            String fromUser = aMsg.getSource().getNick();
+            if(channel==null) channel = fromUser;
+            String[] split = text.split(" ");
+            if(split.length==0) {
+                return new Command("", "", channel, fromUser);
+            } else if(split.length==1) {
+                return new Command(text, "", channel, fromUser);
+            } else {
+                return new Command(split[0], Arrays.copyOfRange(split, 1, split.length), channel, fromUser);
+            }
+        }
     }
 
 
     public static class Command {
         String name;
-        String args;
+        String[] args;
+        String fromUser;
+        String channel;
 
-        public Command(String name, String args) {
+        public Command(String name, String args, String channel, String fromUser) {
+            this.name = name;
+            this.args = args.split(" ");
+            this.channel = channel;
+            this.fromUser = fromUser;
+        }
+
+        public Command(String name, String[] args, String channel, String fromUser) {
             this.name = name;
             this.args = args;
+            this.channel = channel;
+            this.fromUser = fromUser;
         }
     }
 

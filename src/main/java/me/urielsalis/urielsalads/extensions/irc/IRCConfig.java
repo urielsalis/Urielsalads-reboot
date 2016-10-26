@@ -26,4 +26,6 @@ public interface IRCConfig extends Config {
     String realName();
     String ident();
     String server();
+    String joinChannels();
+    String password();
 }

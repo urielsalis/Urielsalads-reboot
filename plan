@@ -1,0 +1,390 @@
+Startup: Load all classes that implement @Module and are in packet me.urielsalis.urielsalads.extensions and get their data
+Create a loading tree accoridng to dependencies. check which packets can be loaded in parallel
+Run init() in order of all modules
+Populate missing EventHandles from all modules
+Fire LoadFinished Event to all modules
+
+
+@Module(name="testModule", version="1.0.3", dependencies="base, otherModule", id="testModule-1.0.3")
+public class testModule {
+	@ModuleInit(id="testModule-1.0.3")
+	public static void init() {
+		//run init of module here
+	}
+
+	@ModuleUnload(id="testModule-1.0.3")
+	public static void unload() {
+		//run when module is being unload, to do all unload tasks
+	}
+
+	@EventHandler
+	public static void someEventParser(SomeEvent event) {
+		//parse events, must be in same package(me.urielsalis.urielsalads.extensions.extensionName.*) or registered manually(and unregistered) in init
+	}
+
+}
+
+Modules:
+	Base: handles sending messages as bot, quitting bot, reloading modules, loading a new module and listing modules.
+	irc: Handles irc connection and registers events for commands and stuff, invite and join channels, handles sending messages from base
+	intel-download: Downloads all drivers for intel, parses them and saves them in a json
+	intel-search: Gets username and link from intel-commands, if dxdiag is valid, it fires a event for ark-search and json-search to try to find it. It listens to the event when its done. json-search has priority
+	ark-search: Searchs cpu in ark and fires event with driver, username and parse table from intel-search(link, cpu, os, gpus, etc)
+	json-search: Searchs for the driver in the json from intel-download(re-read each time)
+	intel-commands: Commands to modify the json and add edgecases
+
+
+json:
+	thingToMatch: {windows732, windows764, windows832, windows864, ..., priority} stores epm ids of each download. Priority: higher is better, default is 0
+
+ark families:
+	stores drivers for families
+
+
+Possible loading order:
+	base
+	irc intel-download intel-commands
+	intel-search
+	ark-search json-search
+
+<mattym> You have http://www.intel.com/content/www/us/en/support/graphics-drivers/000005538.html    and   http://www.intel.com/content/www/us/en/support/graphics-drivers/000005526.html
+<mattym> right?
+<mattym> lol. also are you aware that both http://www.intel.com/content/www/us/en/support/graphics-drivers.html   and https://downloadcenter.intel.com/product/80939/Graphics-Drivers
+<mattym> exist at the same time
+
+
+
+
+<pie_flavor> i'm actually joking
+<urielsalis> pie_flavor,
+<pie_flavor> all that parsing shit goes right over my head
+<urielsalis> its not that hard
+<urielsalis> is finding the right data
+<urielsalis> and how to make it work with your model
+<urielsalis> plus simple json parsing
+<urielsalis> thats for ark
+<pie_flavor> java needs json parsing
+* Rikairchy (~Rik@primary.rikairchy.net) has joined
+<pie_flavor> as a native library
+<urielsalis> other drivers are slightly more complicated
+<Rikairchy> URIEL IS WORSTIEL
+* urielsalis gives channel operator status to Rikairchy
+* urielsalis gives voice to pie_flavor
+<pie_flavor> Rikairchy: ikr his bot is broken as shit
+<pie_flavor> jk
+<urielsalis> for getting the intel list I have to render intel search page and get each item
+<urielsalis> it breaks for no reason because of that
+<Rikairchy> yay
+<urielsalis> and yes. bot is broken cause it was rebooted while intel was down
+<pie_flavor> it links to downloadcenter.intel.com/0
+<urielsalis> thats parsing error
+<pie_flavor> or pretends like it's paying attention to x64-x86 but really isn't
+<urielsalis> it should now
+<pie_flavor> as opposed to its old behavior of just ignoring it altogether
+<urielsalis> sigh, thats broken too now?
+<urielsalis> I need to fully redo it
+<urielsalis> for the 6th time
+<urielsalis> or 7th
+<urielsalis> pie_flavor, wanna help? You know java right?
+<urielsalis> and you made a bot
+<urielsalis> and you used my lib, shouldnt be too hard
+<urielsalis> most is reusable
+<pie_flavor> <@urielsalis> and you made a bot
+<pie_flavor> <@urielsalis> and you used my lib
+<urielsalis> like the drivers search code, I been copy pasting, then modifying that since the first version
+<urielsalis> lol
+<pie_flavor> [citation needed]
+<urielsalis> didnt you made a bot, I recall it in the training channel
+<pie_flavor> uh
+<pie_flavor> no
+<pie_flavor> what bot are you talking about
+<pie_flavor> wait, you mean the discord bot?
+<urielsalis> maybe?
+<pie_flavor> i s'pose that counts but that wasn't much
+<urielsalis> it checked for paid accounts
+<pie_flavor> wait
+<pie_flavor> you think that's me?
+<urielsalis> yes
+<pie_flavor> what?
+<urielsalis> it was the other guy right
+<urielsalis> ?
+<pie_flavor> uh
+<urielsalis> cykrix, yes
+<pie_flavor> pretty sure Pangea makes the bot known as PangeaBot
+<pie_flavor> where you type .m <acct<
+<urielsalis> nonono
+<pie_flavor> s/t</t>/
+<urielsalis> cykrix made bots that literally called the other bots
+<urielsalis> dont see him around as much now
+<pie_flavor> the only bot i've ever made
+<pie_flavor> was actually kind of cool
+<urielsalis> pie_flavor, I want to change how I make my bots
+<urielsalis> make it a plugin system
+<pie_flavor> to make a command that said something random, people would type !formattemplate
+<Rikairchy> modulare?
+<urielsalis> yes
+<pie_flavor> and the bot would upload the template file to the chat
+<urielsalis> my irc lib is quite modular, and works in that way so I know how to do it
+<pie_flavor> they'd download it, edit it, and upload it again with the comment !format :new <commandname>
+<pie_flavor> the bot would download it and extract the configuration node to the main config file
+<urielsalis> I load all .jar in a specific folder, or that I manually call. Then pass events to them
+<urielsalis> pie_flavor, we can do something like that
+<pie_flavor> is it written in scala?
+<urielsalis> nope, but want to change my java ways
+<urielsalis> so maybe
+<pie_flavor> i lovescala
+<urielsalis> i know...
+<pie_flavor> could sing its praises for about as long as i could sing sponge's
+<urielsalis> pie_flavor, we could make it download .jar as modules from chat
+<urielsalis> or accept dcc transfers
+<urielsalis> to load new modules
+<urielsalis> plus commands to disable them, or updating them on the fly
+<urielsalis> live patching for the win
+<pie_flavor> that would be very cool
+<pie_flavor> i nominate you to figure out how the hell that would owrk
+<urielsalis> pie_flavor, check my github
+<urielsalis> I have code to do it already
+<urielsalis> except for DCC file transfers but thats simple enough
+<pie_flavor> >not scala
+<urielsalis> pie_flavor, https://github.com/urielsalis/AnnotationUtils
+<pie_flavor> >maven
+<urielsalis> I use that to get all methods that are annoted by a certain annotation from the classpath and any .jar I add to it
+<urielsalis> im quite proud of it
+<pie_flavor> gradle is the only way
+<urielsalis> for android
+<urielsalis> I like maven
+<urielsalis> and my scripts to autogenerate pom.xml and add it to my repo
+<pie_flavor> >scripts to automate maven
+<pie_flavor> gradle is a script
+<urielsalis> I mean
+<urielsalis> I run creatProject name and it makes me a intellij idea project with all my configs done and adds it to my local maven repo
+<urielsalis> its quite nice
+<pie_flavor> gradle is better
+<urielsalis> but I dont care enough to learn it
+<pie_flavor> you simply can't convey the complexity of a build with an XML document
+<urielsalis> or, I just forget about it and automate myself out of it
+<urielsalis> addDep to add a maven dependency
+<urielsalis> (another script)
+<pie_flavor> you need the script because of all that damn xml
+<urielsalis> or because I have a rule
+<urielsalis> if it takes more than 10 minutes of your life, automate it
+<pie_flavor> gradle it's just compile 'com.example:example-lib:1.0.0-SNAPSHOT'
+<pie_flavor> takes about as long as your script
+<urielsalis> maven is just <dependency> copy stuff from mavencentral here that is 3 liness
+<pie_flavor> after you've looked it up, of course.
+<urielsalis> you have to look up the com.example thing too
+<urielsalis> I can remember the junit one tho
+<pie_flavor> no, i usually remember it
+<urielsalis> <dependency>
+<urielsalis> <artifactID>junit</artifactID>
+<urielsalis> or something
+<pie_flavor> compile 'ninja.leaping:configurate-core:5.3.9-SNAPSHOT'
+<urielsalis> meh, intellij autocompletles it
+<urielsalis> alt+insert, from maven, done
+<urielsalis> cant do that with gradle yet tho :c
+<pie_flavor> compile 'com.github.pie-flavor:morearguments:master-SNAPSHOT'
+<pie_flavor> you can't do that with gradle because it's not necessary
+<pie_flavor> the entire dependency is contained within one string
+<urielsalis> the less typing I do the better
+<pie_flavor> added by one word
+<urielsalis> intellij searchs it for it, then adds it
+<urielsalis> I dont want to look up the name, open the gradle thing, write that and sync my project
+<urielsalis> when I can do it with 3 keystrokes
+<urielsalis> 4 rather
+<pie_flavor> then keep the gradle thing open
+<urielsalis> alt+insert+down key+enter
+<pie_flavor> turn on auto-sync
+<pie_flavor> and memorize the name
+<urielsalis> autosync is turned on, but it takes a while
+<urielsalis> I cant memorize all the libs that I use
+<urielsalis> or the lib im going to use one time only
+<pie_flavor> do you use jitpack ever?
+<urielsalis> the ide is there to assist you in that
+<urielsalis> jitpack?
+<pie_flavor> it's saved my bacon many times
+<pie_flavor> you just add 'https://jitpack.io' as a repository
+<urielsalis> thats nice
+<pie_flavor> and then you can use any github repo as a dependency
+<pie_flavor> compile 'com.github.urielsalis:urielsaladsbot:master-SNAPSHOT'
+<urielsalis> okay, thats nice
+<pie_flavor> version is a Github Release version, or a short commit hash, or branchname-SNAPSHOT
+<urielsalis> works in maven too
+<pie_flavor> and you can use subprojects
+<pie_flavor> yep
+<urielsalis> http://stackoverflow.com/questions/34930820/how-to-use-github-repo-using-jitpack-io-in-maven
+<pie_flavor> ofc it's much quicker in gradle
+<pie_flavor> repositories { maven { url "https://jitpack.io" } }
+<urielsalis> pie_flavor, intellij idea autocompletes it from any repo you set
+<urielsalis> so still 4 keystrokes for maven :P
+<urielsalis> but cba to argue now
+<urielsalis> want to help with Urielsalads?
+<pie_flavor> urielsalis: honestly, even if i was willing to use maven normally in my projects
+<pie_flavor> xml is a shit way to do it
+<urielsalis> sigh, we can use gradle if you want
+<pie_flavor> especially when you never need properties
+<pie_flavor> there's a plugin to make your entire pom file in JSON
+<pie_flavor> or in YAML
+<pie_flavor> or in HOCON
+<pie_flavor> or in Groovy
+<urielsalis> shh
+<urielsalis> want to help or not?
+<pie_flavor> idk
+<urielsalis> you got 9 days to think about it :P
+<pie_flavor> i'm not good with low-level parsing stuff
+<pie_flavor> that's for the dweebs
+<pie_flavor> i'm better with clear-cut APIs
+<urielsalis> the low level parsing stuff is mostly done
+<pie_flavor> like Sponge
+<urielsalis> its just how I interact with that
+<pie_flavor> <@urielsalis> the low level parsing stuff is mostly done
+<pie_flavor> <+Urielsalads> Download link: https://downloadcenter.intel.com/0
+<urielsalis> according to what I can read, it grabs everythign correctly
+<urielsalis> but my drunk, 3am code cant search for it properly
+<urielsalis> grabbing stuff is easy. Finding when to use it is hard
+<pie_flavor> <+Urielsalads> Not found (Latest: Windows 7 32 bit)
+<urielsalis> with so many corner cases intel has
+<pie_flavor> <@urielsalis> the low level parsing stuff is mostly done
+<urielsalis> it loads it into the tables correctly
+<urielsalis> displaying and searching inside of it its not workign correctly
+<pie_flavor> it makes me flip the tables correctly
+<urielsalis> "low level parsing" is not even hard
+<urielsalis> I just loop in their json and add it to a table
+<urielsalis> its 20 lines at most
+<urielsalis> the bulk of the code is parsing the dxdiags
+<pie_flavor> scala case classes might help you out there
+<urielsalis> maybe
+<pie_flavor> or just scala's plain ol' pattern matching
+<urielsalis> I just cant handle it alone anymore
+<urielsalis> I suck at higher level stuff
+<urielsalis> I prefer my asm and c to do my nice algorithms
+<pie_flavor> os match { case Windows(version, arch @ Arch(_)) => ??? }
+<pie_flavor> god i love scala pattern matching
+<urielsalis> you can do that part then
+<pie_flavor> the thing is
+<pie_flavor> i have no idea how to use the registry keys at the bottom
+<urielsalis> registry keys?
+<pie_flavor> or whatever
+<urielsalis> you mean device keys?
+<pie_flavor> the ones that show what the device is
+<pie_flavor> yeah
+<urielsalis> I ignore them
+<urielsalis> odata is more accuratye
+<urielsalis> also, pcidatabase.com is your friend
+<pie_flavor> urielsalis: here. if you hate high-level so much, and i hate low-level so much,
+<urielsalis> we are the perfect  ouple
+<pie_flavor> why don't you write and implement an API, and I can use it
+<pie_flavor> or we could write the api together
+<pie_flavor> in...
+<urielsalis> pls dont say scala
+<pie_flavor> ＳＣＡＬＡ
+<urielsalis> inb4 scala
+<urielsalis> I need to go learn scala
+<pie_flavor> you really do
+<urielsalis> I can make the module parsing stuff and loading of drivers
+<urielsalis> what im thinking now:
+<pie_flavor> here, this is a PDF that I stole. http://infinit.io/_/PzSbzcv
+<urielsalis> barebones system loads bootstrap module
+<urielsalis> that module loads a table that tells it how to load modules(order, dependencies, etc)
+<urielsalis> irc depends only on main so it gets loaded first, it registers its own events for commands
+<pie_flavor> omg we could use toml in this too
+<pie_flavor> i've always wanted to use toml in something important
+<urielsalis> then intel-download gets called in parallel to download the database
+<urielsalis> when both of those are done, intel-core is loaded and uses that database. Waits on a event from irc
+<pie_flavor> Akka could be used for the event bus
+<urielsalis> it fires events when a valid dxdiag is found containing OS and GPUs
+<urielsalis> that gets catched by two more modules
+<urielsalis> log and intel-search
+<urielsalis> log makes the json thing for cubethethird and some general logging
+<pie_flavor> if there's a command that the bot fails at
+<pie_flavor> dxdiag*
+<pie_flavor> there should be a command to tell it the proper link for the next time it sees that combination of hardware and OS/arch
+<pie_flavor> and it'll provide it from memory
+<urielsalis> intel-search does the bulk of the thing. Tries to use memory-parser to check if it matches that
+<urielsalis> if not, calls another module with gpu-parser
+<urielsalis> and if that fails, it calls ark-parser
+<pie_flavor> gotcha
+<urielsalis> and if that fails, it logs it as IMPORTANT and returns to normal
+<urielsalis> then we can change and reload any of those moduels when needed
+<pie_flavor> at that point, it accepts a valid link?
+<urielsalis> intel-core does
+<urielsalis> and parses it for the next stuff
+<pie_flavor> as an inputted command?
+<pie_flavor> i mean
+<urielsalis> yes
+<urielsalis> .dx link
+<pie_flavor> no i mean
+<urielsalis> it gets os, cpu and gpus
+<pie_flavor> if it fails, all the way through
+<urielsalis> it says not found and logs it
+<pie_flavor> .dxlink <link> <intel page>
+<urielsalis> so we can add a memory case
+<pie_flavor> adds it to an internal store
+<urielsalis> no no no
+<urielsalis> .addDriver gpu os downloadepm
+<urielsalis> its the system I have coded I think
+<urielsalis> but not running
+<pie_flavor> gpu os arch* download
+<urielsalis> os includes arch
+<urielsalis> check my Download class in current urielsalads
+<urielsalis> I store the int epm id of each download
+<pie_flavor> ok
+<urielsalis> from windows 7 to 10, all separated into 64 and 32
+<urielsalis> for a total of 8 downloads
+<pie_flavor> what about vista and xP
+<pie_flavor> XP
+<urielsalis> too old to care
+<urielsalis> and vista is shit
+<pie_flavor> there was legit a guy who ran minecraft on his windows 95 machine
+<urielsalis> I rememebr him
+<urielsalis> lol
+<pie_flavor> mattym thinks that
+<pie_flavor> Vista is the lower point
+<pie_flavor> not 7
+<pie_flavor> XP is where you get 'fuck it'
+<urielsalis> Its EOL I think
+<urielsalis> yup, eol mainstream support
+<pie_flavor> and this entire thing needs to be written in scala
+<urielsalis> module system is more difficult in scala I think
+<pie_flavor> i don't think so
+<pie_flavor> i think scala has a built-in mechanism for it iirc
+<urielsalis> I need it to keep annotations in runtime
+<pie_flavor> i s'pose
+<urielsalis> looks like it doesnt do it by default
+<pie_flavor> you can make a mixed java/scala project
+<urielsalis> indeed
+<urielsalis> and its all diferent .jar so it doesnt matter
+<pie_flavor> there's not much in the way of annotations in scala
+<urielsalis> you can do them right?
+<urielsalis> my whole event system runs on annotations?
+<pie_flavor> you can ofc use them
+<urielsalis> for the irc lib
+<pie_flavor> making them, though, is much more robust in java than in scala
+<pie_flavor> but yeah you can always use annotations anywhere in scala
+<urielsalis> http://stackoverflow.com/questions/18473079/whats-the-scala-alternative-to-runtime-preserved-annotations
+<urielsalis> its unstable at this point
+<pie_flavor> trust me
+<pie_flavor> i've made sponge plugins in scala
+<pie_flavor> literally everything about sponge depends on annotations
+<urielsalis> I can do the module system in java, and you implement it on scala?
+<pie_flavor> maybe
+<urielsalis> I do the backbone of the system, that loads the list of modules and dependencies and loads in parallel the .jar
+<pie_flavor> it's so much easier to implement stuff in scala that was written in scala tho
+<urielsalis> can you save all this conversation?
+<pie_flavor> like for instance what sort of List is used
+<urielsalis> thing is, I dont know scala
+<pie_flavor> http://infinit.io/_/PzSbzcv
+<pie_flavor> learn it
+<pie_flavor> it's FUCKING AWESOME.
+<urielsalis> thing is, I dont know scala 5years of java is though
+<urielsalis> specially for high level stuff
+<urielsalis> plus, I plan to have it the more separate posible
+<urielsalis> backbone just load .jars in order, then the core module does everything else
+<pie_flavor> whatever, just make it in java
+<urielsalis> setting up the event system and a data and message bus
+<urielsalis> can you save this conversation?
+<pie_flavor> it's all in my hexchat log
+<urielsalis> also, should make unit tests for this
+<urielsalis> save it elsewhere just in case
+<urielsalis> :P
+<pie_flavor> fun fact
+<pie_flavor> scalatest is the best testing library ever

@@ -32,6 +32,25 @@
             <artifactId>reflections</artifactId>
             <version>0.9.10</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.ircclouds.irc</groupId>
+            <artifactId>irc-api</artifactId>
+            <version>1.0-0011</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aeonbits.owner</groupId>
+            <artifactId>owner</artifactId>
+            <version>1.0.8</version>
+        </dependency>
+
     </dependencies>
 
 </project>

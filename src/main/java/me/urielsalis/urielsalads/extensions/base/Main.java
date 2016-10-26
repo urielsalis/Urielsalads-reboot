@@ -20,11 +20,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+import net.engio.mbassy.listener.Handler;
 
-@ExtensionAPI.Extension(name="base", version="1.0", id="base/1.0")
+@ExtensionAPI.Extension(name="commands", version="1.0.0", id="commands/1.0.0", dependencies = {"irc"})
 public class Main {
-    @ExtensionAPI.ExtensionInit("base/1.0")
-    public static void init(ExtensionAPI api) {
+    //	commands: handles sending messages as bot, quitting bot, reloading modules, loading a new module and listing modules.
 
+    @ExtensionAPI.ExtensionInit("commands/1.0.0")
+    public static void init(ExtensionAPI api) {
+        try {
+            api.registerListener("commandEvent", new CommandListener());
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static class CommandListener implements ExtensionAPI.Listener {
+        @Handler
+        public void handle(me.urielsalis.urielsalads.extensions.irc.Main.Command command) {
+            //handle command
+        }
     }
 }

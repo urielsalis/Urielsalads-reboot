@@ -25,7 +25,7 @@ public class testModule {
 }
 
 Modules:
-	Base: handles sending messages as bot, quitting bot, reloading modules, loading a new module and listing modules.
+	Comands: handles sending messages as bot, quitting bot, reloading modules, loading a new module and listing modules.
 	irc: Handles irc connection and registers events for commands and stuff, invite and join channels, handles sending messages from base
 	intel-download: Downloads all drivers for intel, parses them and saves them in a json
 	intel-search: Gets username and link from intel-commands, if dxdiag is valid, it fires a event for ark-search and json-search to try to find it. It listens to the event when its done. json-search has priority

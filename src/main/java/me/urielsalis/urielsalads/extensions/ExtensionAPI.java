@@ -26,6 +26,8 @@ import java.util.HashMap;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+//This file should be copied in the same package for extensions to work
 public class ExtensionAPI {
     HashMap<String, MBassador> bus = new HashMap<>();
 
@@ -50,13 +52,13 @@ public class ExtensionAPI {
     }
 
 
-    private interface Listener {
+    public interface Listener {
     }
 
-    private class EventAlreadyExistsException extends Exception {
+    public class EventAlreadyExistsException extends Exception {
     }
 
-    private class EventDoesntExistsException extends Throwable {
+    public class EventDoesntExistsException extends Throwable {
     }
 
     @Retention(value = RetentionPolicy.RUNTIME)

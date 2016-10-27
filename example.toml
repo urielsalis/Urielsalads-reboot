@@ -12,7 +12,7 @@ version = "1.0"
             os = [{version = "7", arch = 32}, {version = "7", arch = 64}, {version = "8", arch = 64}]
             epmID = 44446
         [[intel.driver.download]]
-            os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64]
+            os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64}]
             epmID = 44544
     [[intel.driver]]
         name = "Mobile intel 4 series 2"
@@ -21,7 +21,7 @@ version = "1.0"
              os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
              epmID = 55446
          [[intel.driver.download]]
-             os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64]
+             os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64}]
              epmID = 555544
     [[intel.ark]]
         name = "broadwell" #I get the family as a string, and loop till I find that matches, it may not exists

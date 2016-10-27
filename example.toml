@@ -1,0 +1,48 @@
+version = "1.0"
+#intel
+[intel]
+    version = "1.0"
+    lastPartialUpdate = date #last time update was just updating drivers via epmid. Done every day
+    lastFullUpdate = date #last time intel page was reparsed to get all epmids. Done every week
+    name = "intel-download"
+    [[intel.driver]]
+        name = "Mobile intel 4 series"
+        epmID = 45684
+        [[intel.driver.download]]
+            os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
+            epmID = 44446
+        [[intel.driver.download]]
+            os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64]
+            epmID = 44544
+    [[intel.driver]]
+
+    [[intel.ark]]
+        name = "broadwell" #I get the family as a string, and loop till I find that matches, it may not exists
+        [[intel.ark.download]] #this is mainly so I can use the same class that in the download one
+            os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
+            epmID = 44446
+
+
+[amd]
+
+
+[nvidia]
+
+
+
+Toml toml = new Toml().read(new File("download.toml"));
+
+
+Braswell
+    Windows 8 not avaliable
+    Windows 10 64: 25176 32: 25149
+    Windows 8.1/7 25235
+
+Arrandale 7 81503
+Baytrail Not for windows 7 x86 Intel HD Graphics 2500 download
+Clarkdale 7 81503
+Haswell Intel HD graphics 4600 download
+Ivy Bridge 10 not avaliable. 8.1/8/7 Intel HD graphics 2500 download
+Sandy Bridge 10 not avaliable. 8.1/8/7 Intel HD graphics 2000 download
+Wolfdale not minimum requirements
+Penryn not minimum requirements

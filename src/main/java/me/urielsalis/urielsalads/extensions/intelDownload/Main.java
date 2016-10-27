@@ -1,6 +1,9 @@
 package me.urielsalis.urielsalads.extensions.intelDownload;
 
+import com.moandjiezana.toml.Toml;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+
+import java.io.File;
 
 /**
  * UrielSalads
@@ -22,8 +25,11 @@ import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 @ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"base"}, id = "intel-download/1.0.0")
 public class Main {
 
+    public static Toml toml;
+
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
     public static void init(ExtensionAPI api) {
+        toml = new Toml().read(new File("download.toml"));
 
     }
 

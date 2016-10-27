@@ -20,9 +20,17 @@ import java.util.Date;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class Config {
-    String version;
-    Date createdOn;
-    Intel intel;
-    AMD amd;
-    Nvidia nvidia;
+    public String version;
+    public Date createdOn;
+    public Intel intel;
+    public AMD amd;
+    public Nvidia nvidia;
+
+    public Config(String version, String id) {
+        this.version = version;
+        createdOn = new Date();
+        intel = new Intel(version, id);
+        amd = new AMD();
+        nvidia = new Nvidia();
+    }
 }

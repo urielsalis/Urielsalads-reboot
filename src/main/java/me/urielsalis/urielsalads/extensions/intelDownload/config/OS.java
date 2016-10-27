@@ -18,6 +18,15 @@ package me.urielsalis.urielsalads.extensions.intelDownload.config;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class OS {
-    String version;
-    int arch;
+    public String version;
+    public int arch;
+
+    public OS(String version, int arch) {
+        this.version = version;
+        this.arch = arch;
+    }
+
+    public OS() {
+
+    }
 }

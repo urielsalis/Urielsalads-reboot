@@ -1,5 +1,6 @@
 package me.urielsalis.urielsalads.extensions.intelDownload.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,6 +21,34 @@ import java.util.List;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class Download {
-    int epmID;
-    List<OS> os;
+    public int epmID;
+    public List<OS> os;
+
+    public Download() {
+
+    }
+
+    public Download(int epmID) {
+        this.epmID = epmID;
+        os = new ArrayList<>();
+    }
+
+    public Download(EPMIdResults.ResultsForDisplayImpl display) {
+        epmID = display.Id;
+        os = new ArrayList<>();
+        for(String str: display.OperatingSystemSet) {
+            String version = "TooOld";
+            int arch = 32;
+            if(str.contains("7")) {
+                version = "7";
+            } else if(str.contains("7")) {
+                version = "8";
+            } else if(str.contains("7")) {
+                version = "8.1";
+            } else if(str.contains("7")) {
+                version = "10";
+            }
+            os.add(new OS(version, arch));
+        }
+    }
 }

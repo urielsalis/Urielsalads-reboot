@@ -1,5 +1,6 @@
 package me.urielsalis.urielsalads.extensions.intelDownload.config;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -21,22 +22,50 @@ import java.util.List;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class Intel {
-    String version;
-    Date lastPartialUpdate;
-    Date lastFullUpdate;
-    String name;
-    List<Driver> driver;
-    List<Ark> ark;
+    public String version;
+    public Date lastPartialUpdate;
+    public Date lastFullUpdate;
+    public String name;
+    public List<Driver> driver;
+    public List<Ark> ark;
 
-    class Driver {
-        String name;
-        int epmID;
-        List<Download> download;
+    public Intel(String version, String id) {
+        this.version = version;
+        lastPartialUpdate = new Date();
+        lastFullUpdate = new Date();
+        name = id;
+        driver = new ArrayList<>();
+        ark = new ArrayList<>();
     }
 
-    class Ark {
-        String name;
-        List<Download> download;
+    public static class Driver {
+        public String name;
+        public int epmID;
+        public List<Download> download;
+
+        public Driver(String name, int epmID) {
+            this.name = name;
+            this.epmID = epmID;
+            download = new ArrayList<>();
+        }
+
+        public Driver() {
+
+        }
+    }
+
+    public class Ark {
+        public String name;
+        public List<Download> download;
+
+        public Ark(String name) {
+            this.name = name;
+            download = new ArrayList<>();
+        }
+
+        public Ark() {
+
+        }
     }
 
 }

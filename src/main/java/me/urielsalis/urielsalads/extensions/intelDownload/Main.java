@@ -7,6 +7,7 @@ import me.urielsalis.urielsalads.extensions.intelDownload.config.Config;
 import me.urielsalis.urielsalads.extensions.intelDownload.config.Download;
 import me.urielsalis.urielsalads.extensions.intelDownload.config.EPMIdResults;
 import me.urielsalis.urielsalads.extensions.intelDownload.config.Intel;
+import net.engio.mbassy.listener.Handler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -21,10 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * UrielSalads
@@ -46,19 +44,40 @@ import java.util.concurrent.TimeUnit;
 @ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"base"}, id = "intel-download/1.0.0")
 public class Main {
     private static Config config;
+    private static ExtensionAPI api;
+    private static Gson g = new Gson();
 
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
     public static void init(ExtensionAPI api) {
         //fill config
         config = new Config("1.0.0", "intel-download/1.0.0");
-        downloadDrivers();
+        Main.api = api;
+        fullUpdate();
         writeToml();
+        registerEvents();
     }
 
-    private static void downloadDrivers() {
+    @ExtensionAPI.ExtensionUnload("intel-download/1.0.0")
+    public static void unload(ExtensionAPI api) {
+        //fill config
+        try {
+            api.unRegisterEvent("intel-download/1.0.0/CommandListener");
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void registerEvents() {
+        try {
+            api.registerListener("commandEvent", new CommandListener());
+        } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void fullUpdate() {
         try {
             List<Callable<Object>> callables = new ArrayList<>();
-            final Gson g = new Gson();
             Document document = Jsoup.connect("http://www.intel.com/content/www/us/en/support/graphics-drivers.html").userAgent("UrielsalisBot for auto-dxdiag parsing/github.com/urielsalads-reboot/uriel@urielsalis.me/Jsoup").get();
             Element tableMain = document.getElementById("productSelector-1").getAllElements().first().getElementsByClass("blade-expand-secondary").first();
             Elements blades = tableMain.getElementsByClass("blade-group").first().getElementsByClass("blade");
@@ -86,14 +105,7 @@ public class Main {
                                     System.out.println("Error processing " + href);
                                 }
                                 System.out.println("Thread " + Thread.currentThread().getName() + " of " +  Thread.activeCount() + ": " + name + " - " + epmID);
-                                URL url = new URL("https://downloadcenter.intel.com/json/pageresults?pageNumber=1&&productId="+epmID);
-                                HttpURLConnection request = (HttpURLConnection) url.openConnection();
-                                request.connect();
-                                EPMIdResults results = g.fromJson(new InputStreamReader((InputStream) request.getContent()), EPMIdResults.class);
                                 Intel.Driver driver = new Intel.Driver(name, epmID);
-                                for(EPMIdResults.ResultsForDisplayImpl display: results.ResultsForDisplay) {
-                                    Main.fillDownload(driver, display);
-                                }
                                 Main.addDriver(driver);
                                 return null;
                             }
@@ -110,14 +122,67 @@ public class Main {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-             System.out.println("done");
+            partialUpdate();
+            System.out.println("done");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void fillDownload(Intel.Driver driver, EPMIdResults.ResultsForDisplayImpl display) {
+    public static void partialUpdate() {
+        List<Callable<PartialUpdateData>> callables2 = new ArrayList<>();
+
+        for(final Intel.Driver driver: config.intel.driver) {
+            callables2.add(new Callable<PartialUpdateData>() {
+                @Override
+                public PartialUpdateData call() throws Exception {
+                    return new PartialUpdateData(driver, fillDownload(driver));
+                }
+            });
+        }
+
+        ExecutorService service = Executors.newFixedThreadPool(8);
+        try {
+            List<Future<PartialUpdateData>> futures = service.invokeAll(callables2);
+            while(service.awaitTermination(1, TimeUnit.SECONDS)) { //Wait till all threads finished
+                service.awaitTermination(1, TimeUnit.SECONDS);
+            }
+            config.intel.driver.clear();
+            for(Future<PartialUpdateData> future: futures) {
+                if(future.isDone()) {
+                    PartialUpdateData data = future.get();
+                    data.driver.download.addAll(data.downloads);
+                    config.intel.driver.add(data.driver);
+                } else {
+                    System.err.println("A future didnt finish in time!!!!");
+                }
+            }
+            writeToml();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private static ArrayList<Download> fillDownload(Intel.Driver driver) {
+        try {
+            URL url = new URL("https://downloadcenter.intel.com/json/pageresults?pageNumber=1&&productId=" + driver.epmID);
+            HttpURLConnection request = (HttpURLConnection) url.openConnection();
+            request.connect();
+            ArrayList<Download> downloads = new ArrayList<>();
+            EPMIdResults results = g.fromJson(new InputStreamReader((InputStream) request.getContent()), EPMIdResults.class);
+            for (EPMIdResults.ResultsForDisplayImpl display : results.ResultsForDisplay) {
+                downloads.add(new Download(display));
+            }
+            return downloads;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static synchronized void fillDownload(Intel.Driver driver, EPMIdResults.ResultsForDisplayImpl display) {
         driver.download.add(new Download(display));
     }
 
@@ -151,10 +216,32 @@ public class Main {
         init(null);
     }
 
-    @ExtensionAPI.ExtensionUnload("intel-download/1.0.0")
-    public static void unload(ExtensionAPI api) {
 
+    private static class PartialUpdateData {
+        public Intel.Driver driver;
+        public ArrayList<Download> downloads;
+        public PartialUpdateData(Intel.Driver driver, ArrayList<Download> downloads) {
+            this.driver = driver;
+            this.downloads = downloads;
+        }
     }
 
+    private static class CommandListener implements ExtensionAPI.Listener {
+        @Handler
+        public void handle(me.urielsalis.urielsalads.extensions.irc.Main.Command command) {
+            switch (command.getName()) {
+                case "partialUpdate":
+                    partialUpdate();
+                    break;
+                case "fullUpdate":
+                    fullUpdate();
+                    break;
+            }
+        }
 
+        @Override
+        public String name() {
+            return "intel-download/1.0.0/CommandListener";
+        }
+    }
 }

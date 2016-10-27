@@ -9,9 +9,9 @@ import com.ircclouds.irc.api.domain.messages.*;
 import com.ircclouds.irc.api.domain.messages.interfaces.IMessage;
 import com.ircclouds.irc.api.listeners.VariousMessageListenerAdapter;
 import com.ircclouds.irc.api.state.IIRCState;
-import com.sun.deploy.util.ArrayUtil;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import org.aeonbits.owner.ConfigFactory;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -212,15 +212,18 @@ public class Main {
 
         private Command parseCommand(AbstractPrivMsg aMsg, String channel) {
             String text = aMsg.getText();
+            if(!text.startsWith(".")) {
+                return new Command("", new String[]{}, "", "");
+            }
             String fromUser = aMsg.getSource().getNick();
             if(channel==null) channel = fromUser;
             String[] split = text.split(" ");
             if(split.length==0) {
-                return new Command("", "", channel, fromUser);
+                return new Command("", "", "", "");
             } else if(split.length==1) {
-                return new Command(text, "", channel, fromUser);
+                return new Command(text.substring(1), "", channel, fromUser);
             } else {
-                return new Command(split[0], Arrays.copyOfRange(split, 1, split.length), channel, fromUser);
+                return new Command(split[0].substring(1), Arrays.copyOfRange(split, 1, split.length), channel, fromUser);
             }
         }
     }

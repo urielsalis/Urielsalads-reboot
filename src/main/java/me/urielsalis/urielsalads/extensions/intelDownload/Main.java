@@ -1,10 +1,13 @@
 package me.urielsalis.urielsalads.extensions.intelDownload;
 
 import com.moandjiezana.toml.Toml;
+import com.moandjiezana.toml.TomlWriter;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import me.urielsalis.urielsalads.extensions.intelDownload.config.Intel;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * UrielSalads
@@ -32,7 +35,9 @@ public class Main {
     public static void init(ExtensionAPI api) {
         toml = new Toml().read(new File("example.toml"));
         Intel intel = toml.getTable("intel").to(Intel.class);
-        System.out.println("test");
+        System.out.println("Writting it back");
+        TomlWriter writer = new TomlWriter();
+        Map<String, Object> map = new HashMap<>();
     }
 
     public static void main(String[] args) {

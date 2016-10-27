@@ -31,7 +31,7 @@ public class Intel {
     class Driver {
         String name;
         int epmID;
-       List<Download> downloads;
+        List<Download> downloads;
     }
 
     class Ark {

@@ -2,6 +2,7 @@ package me.urielsalis.urielsalads.extensions.intelDownload;
 
 import com.moandjiezana.toml.Toml;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+import me.urielsalis.urielsalads.extensions.intelDownload.config.Intel;
 
 import java.io.File;
 
@@ -29,8 +30,13 @@ public class Main {
 
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
     public static void init(ExtensionAPI api) {
-        toml = new Toml().read(new File("download.toml"));
+        toml = new Toml().read(new File("example.toml"));
+        Intel intel = toml.getTable("intel").to(Intel.class);
+        System.out.println("test");
+    }
 
+    public static void main(String[] args) {
+        init(null);
     }
 
     @ExtensionAPI.ExtensionUnload("intel-download/1.0.0")

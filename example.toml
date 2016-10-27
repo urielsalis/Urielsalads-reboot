@@ -18,7 +18,7 @@ version = "1.0"
         name = "Mobile intel 4 series 2"
         epmID = 44444
         [[intel.driver.download]]
-            os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
+            os = [{version = "7", arch = 32}, {version = "7", arch = 64}, {version = "8", arch = 64}]
             epmID = 55446
         [[intel.driver.download]]
             os = [{version = "8.1", arch = 32}, {version = "8.1", arch = 64}, {version = "10", arch = 64}]
@@ -26,12 +26,12 @@ version = "1.0"
     [[intel.ark]]
         name = "broadwell" #I get the family as a string, and loop till I find that matches, it may not exists
         [[intel.ark.download]] #this is mainly so I can use the same class that in the download one
-            os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
+            os = [{version = "7", arch = 32}, {version = "7", arch = 64}, {version = "8", arch = 64}]
             epmID = 44446
     [[intel.ark]]
         name = "braswell" #I get the family as a string, and loop till I find that matches, it may not exists
         [[intel.ark.download]] #this is mainly so I can use the same class that in the download one
-            os = [{version = "7", arch = 32}, {version = "7", arch = n64}, {version = "8", arch = 64}]
+            os = [{version = "7", arch = 32}, {version = "7", arch = 64}, {version = "8", arch = 64}]
             epmID = 454546
 
 

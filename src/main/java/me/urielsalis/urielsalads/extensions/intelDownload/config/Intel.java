@@ -25,13 +25,13 @@ public class Intel {
     Date lastPartialUpdate;
     Date lastFullUpdate;
     String name;
-    List<Driver> drivers;
-    List<Ark> families;
+    List<Driver> driver;
+    List<Ark> ark;
 
     class Driver {
         String name;
         int epmID;
-        List<Download> downloads;
+        List<Download> download;
     }
 
     class Ark {

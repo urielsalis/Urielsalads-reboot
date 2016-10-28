@@ -1,4 +1,4 @@
-package me.urielsalis.urielsalads.extensions.intelDownload.config;
+package me.urielsalis.urielsalads.extensions.download;
 
 /**
  * UrielSalads
@@ -17,16 +17,7 @@ package me.urielsalis.urielsalads.extensions.intelDownload.config;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class OS {
-    public String version;
-    public int arch;
+public class AMD {
+    public boolean newConfig = true;
 
-    public OS(String version, int arch) {
-        this.version = version;
-        this.arch = arch;
-    }
-
-    public OS() {
-
-    }
 }

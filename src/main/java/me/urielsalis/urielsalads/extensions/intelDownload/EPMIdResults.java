@@ -1,4 +1,4 @@
-package me.urielsalis.urielsalads.extensions.intelDownload.config;
+package me.urielsalis.urielsalads.extensions.intelDownload;
 
 import java.util.List;
 

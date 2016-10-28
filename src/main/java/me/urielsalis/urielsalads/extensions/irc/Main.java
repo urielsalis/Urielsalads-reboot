@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * UrielSalads
@@ -65,7 +66,7 @@ public class Main {
                 while(!aIRCState.isConnected()) {
                     try {
                         System.out.println("Sleeping for 1 second");
-                        wait(1000);
+                        TimeUnit.SECONDS.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

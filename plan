@@ -1,3 +1,5 @@
+nvidia https://gist.github.com/robot56/fefe6f00ab54a6e59b99
+amd http://support.amd.com/drivers/xml/driver_selector_09_us.xml  replace &ampamp to &amp
 Startup: Load all classes that implement @Module and are in packet me.urielsalis.urielsalads.extensions and get their data
 Create a loading tree accoridng to dependencies
 Run init() in order of all modules

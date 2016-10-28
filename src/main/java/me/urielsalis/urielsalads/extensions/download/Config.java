@@ -1,4 +1,6 @@
-package me.urielsalis.urielsalads.extensions.intelDownload.config;
+package me.urielsalis.urielsalads.extensions.download;
+
+import java.util.Date;
 
 /**
  * UrielSalads
@@ -17,5 +19,18 @@ package me.urielsalis.urielsalads.extensions.intelDownload.config;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class AMD {
+public class Config {
+    public String version;
+    public Date createdOn;
+    public Intel intel;
+    public AMD amd;
+    public Nvidia nvidia;
+
+    public Config(String version, String id) {
+        this.version = version;
+        createdOn = new Date();
+        intel = new Intel(version, id);
+        amd = new AMD();
+        nvidia = new Nvidia();
+    }
 }

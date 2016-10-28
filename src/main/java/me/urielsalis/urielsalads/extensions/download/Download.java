@@ -1,4 +1,6 @@
-package me.urielsalis.urielsalads.extensions.intelDownload.config;
+package me.urielsalis.urielsalads.extensions.download;
+
+import me.urielsalis.urielsalads.extensions.intelDownload.EPMIdResults;
 
 import java.util.ArrayList;
 import java.util.List;

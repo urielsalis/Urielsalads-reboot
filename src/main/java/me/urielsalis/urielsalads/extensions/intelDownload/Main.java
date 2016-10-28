@@ -1,28 +1,26 @@
 package me.urielsalis.urielsalads.extensions.intelDownload;
 
-import com.google.gson.Gson;
-import com.moandjiezana.toml.TomlWriter;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
-import me.urielsalis.urielsalads.extensions.intelDownload.config.Config;
-import me.urielsalis.urielsalads.extensions.intelDownload.config.Download;
-import me.urielsalis.urielsalads.extensions.intelDownload.config.EPMIdResults;
-import me.urielsalis.urielsalads.extensions.intelDownload.config.Intel;
+import me.urielsalis.urielsalads.extensions.download.Download;
+import me.urielsalis.urielsalads.extensions.download.DownloadMain;
+import me.urielsalis.urielsalads.extensions.download.Intel;
 import net.engio.mbassy.listener.Handler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
+
+import static me.urielsalis.urielsalads.extensions.download.DownloadMain.config;
+import static me.urielsalis.urielsalads.extensions.download.DownloadMain.g;
 
 /**
  * UrielSalads
@@ -41,20 +39,21 @@ import java.util.concurrent.*;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-@ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"commands"}, id = "intel-download/1.0.0")
+@ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"download", "irc"}, id = "intel-download/1.0.0")
 public class Main {
-    private static Config config;
     private static ExtensionAPI api;
-    private static Gson g = new Gson();
 
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
     public static void initIntelDownload(ExtensionAPI api) {
         //fill config
-        config = new Config("1.0.0", "intel-download/1.0.0");
         Main.api = api;
-        fullUpdate();
-        writeToml();
+        if(config.intel.newConfig) {
+            fullUpdate();
+            config.intel.newConfig = false;
+            writeJSON();
+        }
         registerEvents();
+
     }
 
     @ExtensionAPI.ExtensionUnload("intel-download/1.0.0")
@@ -159,7 +158,7 @@ public class Main {
                     System.err.println("A future didnt finish in time!!!!");
                 }
             }
-            writeToml();
+            writeJSON();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -196,15 +195,8 @@ public class Main {
         return text.contains("(") ? text.substring(0, text.indexOf("(") - 1).replace("®", "").trim() : text.replace("®", "").trim();
     }
 
-    public static void writeToml() {
-        config.createdOn = new Date();
-        try {
-            new TomlWriter().write(config, new File("test.toml"));
-            System.out.println("Saved");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public static void writeJSON() {
+        DownloadMain.writeJSON();
     }
 
     /*

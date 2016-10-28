@@ -1,7 +1,7 @@
 package me.urielsalis.urielsalads.extensions;
 
-import me.urielsalis.urielsalads.extensions.irc.Main;
 import net.engio.mbassy.bus.MBassador;
+import net.engio.mbassy.bus.error.IPublicationErrorHandler;
 import net.engio.mbassy.bus.publication.SyncAsyncPostCommand;
 
 import java.lang.annotation.ElementType;
@@ -9,7 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * UrielSalads
@@ -35,34 +35,51 @@ public class ExtensionAPI {
     public ArrayList<Extension> avaliableExtensions = new ArrayList<>();
     public ArrayList<Listener> listeners = new ArrayList<>();
 
-    HashMap<String, MBassador> bus = new HashMap<>();
+    ConcurrentHashMap<String, MBassador> bus = new ConcurrentHashMap<>();
 
-    public void registerEvent(String eventName) throws EventAlreadyExistsException{
-        if(bus.containsKey(eventName)) throw new EventAlreadyExistsException();
-        bus.put(eventName, new MBassador());
+
+    public void registerEvent(String eventName) throws EventAlreadyExistsException {
+        synchronized (bus) {
+            if (bus.containsKey(eventName)) throw new EventAlreadyExistsException();
+            bus.put(eventName, new MBassador(new IPublicationErrorHandler.ConsoleLogger()));
+        }
     }
 
     public void registerListener(String eventName, Listener listener) throws EventDoesntExistsException {
-        if(bus.containsKey(eventName)) throw new EventDoesntExistsException();
-        bus.get(eventName).subscribe(listener);
-        listeners.add(listener);
+        synchronized (bus) {
+            if(!bus.containsKey(eventName)) throw new EventDoesntExistsException();
+            bus.get(eventName).subscribe(listener);
+        }
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
         fire("onListenerRegistered", eventName);
     }
 
     public void unregisterListener(String eventName, String name) throws EventDoesntExistsException {
-        if(bus.containsKey(eventName)) throw new EventDoesntExistsException();
+        synchronized (bus) {
+            if (!bus.containsKey(eventName)) throw new EventDoesntExistsException();
+        }
         for(Listener listener: listeners) {
             if(listener.name().equals(name)) {
-                bus.get(eventName).unsubscribe(listener);
-                listeners.remove(listener);
+                synchronized (bus) {
+                    bus.get(eventName).unsubscribe(listener);
+                }
+                synchronized (listeners) {
+                    listeners.remove(listener);
+                }
                 return;
             }
         }
     }
 
     public SyncAsyncPostCommand fire(String eventName, Object data) throws EventDoesntExistsException {
-        if(bus.containsKey(eventName)) throw new EventDoesntExistsException();
-        return bus.get(eventName).post(data);
+        if(data==null) return null;
+        synchronized (bus) {
+
+            if(!bus.containsKey(eventName)) throw new EventDoesntExistsException();
+            return bus.get(eventName).post(data);
+        }
     }
 
     public Extension getExtention(String name, String version) {
@@ -77,8 +94,10 @@ public class ExtensionAPI {
     }
 
     public void unRegisterEvent(String eventName) throws EventDoesntExistsException {
-        if(bus.containsKey(eventName)) throw new EventDoesntExistsException();
-        bus.remove(eventName);
+        if(!bus.containsKey(eventName)) throw new EventDoesntExistsException();
+        synchronized (bus) {
+            bus.remove(eventName);
+        }
     }
 
 

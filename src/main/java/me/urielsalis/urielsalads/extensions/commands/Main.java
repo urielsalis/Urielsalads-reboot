@@ -24,16 +24,17 @@ import com.ircclouds.irc.api.domain.IRCChannel;
 import com.sun.deploy.util.StringUtils;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import net.engio.mbassy.listener.Handler;
-import static me.urielsalis.urielsalads.extensions.irc.Main.api;
 
 import java.util.Arrays;
+
+import static me.urielsalis.urielsalads.extensions.irc.Main.api;
 
 @ExtensionAPI.Extension(name="commands", version="1.0.0", id="commands/1.0.0", dependencies = {"irc"})
 public class Main {
     //	commands: handles sending messages as bot, quitting bot, reloading modules, loading a new module and listing modules.
     private static ExtensionAPI extapi;
     @ExtensionAPI.ExtensionInit("commands/1.0.0")
-    public static void init(ExtensionAPI extapi) {
+    public static void initCommands(ExtensionAPI extapi) {
         Main.extapi = extapi;
         try {
             extapi.registerListener("commandEvent", new CommandListener());

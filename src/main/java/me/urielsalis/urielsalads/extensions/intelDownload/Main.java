@@ -41,14 +41,14 @@ import java.util.concurrent.*;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-@ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"base"}, id = "intel-download/1.0.0")
+@ExtensionAPI.Extension(name="intel-download", version = "1.0.0", dependencies = {"commands"}, id = "intel-download/1.0.0")
 public class Main {
     private static Config config;
     private static ExtensionAPI api;
     private static Gson g = new Gson();
 
     @ExtensionAPI.ExtensionInit("intel-download/1.0.0")
-    public static void init(ExtensionAPI api) {
+    public static void initIntelDownload(ExtensionAPI api) {
         //fill config
         config = new Config("1.0.0", "intel-download/1.0.0");
         Main.api = api;
@@ -152,7 +152,9 @@ public class Main {
                 if(future.isDone()) {
                     PartialUpdateData data = future.get();
                     data.driver.download.addAll(data.downloads);
-                    config.intel.driver.add(data.driver);
+                    synchronized (config.intel.driver) {
+                        config.intel.driver.add(data.driver);
+                    }
                 } else {
                     System.err.println("A future didnt finish in time!!!!");
                 }
@@ -213,7 +215,7 @@ public class Main {
     }*/
 
     public static void main(String[] args) {
-        init(null);
+        initIntelDownload(null);
     }
 
 

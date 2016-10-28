@@ -12,8 +12,12 @@ import com.ircclouds.irc.api.state.IIRCState;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import org.aeonbits.owner.ConfigFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * UrielSalads
@@ -39,18 +43,33 @@ public class Main {
     private static IRCConfig ircConfig;
 
     @ExtensionAPI.ExtensionInit("irc/1.0.0")
-    public static void init(ExtensionAPI extapi) {
+    public static void initIRC(ExtensionAPI extapi) {
         Main.extapi = extapi;
         Main.api = new IRCApiImpl(true);
+        initEvents();
         System.out.println("Reading configs");
-        ircConfig = ConfigFactory.create(IRCConfig.class);
+        Properties props = new Properties();
+        try {
+            props.load(new FileInputStream(new File("IRCConfig.properties")));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        ircConfig = ConfigFactory.create(IRCConfig.class, props);
         System.out.println("Starting IRC");
-        api.connect(getServerParams(ircConfig.nick1(), Arrays.asList(ircConfig.nick2(), ircConfig.nick3()), ircConfig.realName(), ircConfig.ident(), ircConfig.server(), true), new Callback<IIRCState>()
+        api.connect(getServerParams(ircConfig.nick1(), Arrays.asList(ircConfig.nick2(), ircConfig.nick3()), ircConfig.realName(), ircConfig.ident(), ircConfig.server(), false), new Callback<IIRCState>()
         {
             @Override
             public void onSuccess(final IIRCState aIRCState)
             {
-                // Connected! continue loading
+                while(!aIRCState.isConnected()) {
+                    try {
+                        System.out.println("Sleeping for 1 second");
+                        wait(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
                 Main.continueLoad();
             }
 
@@ -60,6 +79,33 @@ public class Main {
                 throw new RuntimeException(aErrorMessage);
             }
         });
+    }
+
+    private static void initEvents() {
+        try {
+            extapi.registerEvent("commandEvent");
+            extapi.registerEvent("onUserPing");
+            extapi.registerEvent("onUserVersion");
+            extapi.registerEvent("onServerPing");
+            extapi.registerEvent("onChannelJoin");
+            extapi.registerEvent("onChannelPart");
+            extapi.registerEvent("onChannelNotice");
+            extapi.registerEvent("onChannelAction");
+            extapi.registerEvent("onChannelKick");
+            extapi.registerEvent("onMessage");
+            extapi.registerEvent("onTopicChange");
+            extapi.registerEvent("onUserPrivMessage");
+            extapi.registerEvent("onUserNotice");
+            extapi.registerEvent("onUserAction");
+            extapi.registerEvent("onServerNumericAction");
+            extapi.registerEvent("onServerNotice");
+            extapi.registerEvent("onNickChange");
+            extapi.registerEvent("onUserQuit");
+            extapi.registerEvent("onError");
+            extapi.registerEvent("onChannelMode");
+        } catch (ExtensionAPI.EventAlreadyExistsException e) {
+            e.printStackTrace();
+        }
     }
 
     @ExtensionAPI.ExtensionUnload("irc/1.0.0")
@@ -93,38 +139,13 @@ public class Main {
     }
 
     private static void continueLoad() {
-        try {
-            extapi.registerEvent("commandEvent");
-            extapi.registerEvent("onUserPing");
-            extapi.registerEvent("onUserVersion");
-            extapi.registerEvent("onServerPing");
-            extapi.registerEvent("onMessage");
-            extapi.registerEvent("onChannelJoin");
-            extapi.registerEvent("onChannelPart");
-            extapi.registerEvent("onChannelNotice");
-            extapi.registerEvent("onChannelAction");
-            extapi.registerEvent("onChannelKick");
-            extapi.registerEvent("onMessage");
-            extapi.registerEvent("onTopicChange");
-            extapi.registerEvent("onUserPrivMessage");
-            extapi.registerEvent("onUserNotice");
-            extapi.registerEvent("onUserAction");
-            extapi.registerEvent("onServerNumericAction");
-            extapi.registerEvent("onServerNotice");
-            extapi.registerEvent("onNickChange");
-            extapi.registerEvent("onUserQuit");
-            extapi.registerEvent("onError");
-            extapi.registerEvent("onChannelMode");
-
-            api.addListener(new Listeners());
-            api.message("NickServ", "identify " + ircConfig.nick1() + " " + ircConfig.password());
-            String[] channels = ircConfig.joinChannels().split(" ");
-            for(String channel: channels) {
-                api.joinChannel(channel);
-            }
-        } catch (ExtensionAPI.EventAlreadyExistsException e) {
-            e.printStackTrace();
+        api.addListener(new Listeners());
+        for(String s: ircConfig.joinChannels().split(" ")) {
+            api.joinChannel(s);
         }
+        api.message("NickServ", "identify " + ircConfig.nick1() + " " + ircConfig.password());
+        String[] channels = ircConfig.joinChannels().split(" ");
+
     }
 
     public static class Listeners extends VariousMessageListenerAdapter

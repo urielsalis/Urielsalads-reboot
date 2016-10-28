@@ -76,13 +76,11 @@ public class ExtensionHandler {
         try {
             api.registerEvent("loadExtension");
             api.registerEvent("unloadExtension");
-        } catch (ExtensionAPI.EventAlreadyExistsException e) {
-            e.printStackTrace();
-        }
-        try {
             api.registerListener("loadExtension", new LoadExtensionListener());
             api.registerListener("unloadExtension", new UnloadExtensionListener());
         } catch (ExtensionAPI.EventDoesntExistsException e) {
+            e.printStackTrace();
+        } catch (ExtensionAPI.EventAlreadyExistsException e) {
             e.printStackTrace();
         }
     }
@@ -193,7 +191,7 @@ public class ExtensionHandler {
             toLoad.remove(loaded);
         }
         while(alreadyLoaded.size() != extensions.size()) {
-            System.out.println("Step " + counter);
+            System.out.println("\nStep " + counter);
             LoadOrder step = new LoadOrder();
             for(ExtensionAPI.ExtensionData data: toLoad) {
                 if(dependenciesMet(data)) {
@@ -202,6 +200,10 @@ public class ExtensionHandler {
                     System.out.print("  " + data.extension.id());
                 }
             }
+            for(ExtensionAPI.ExtensionData loaded: alreadyLoaded) {
+                toLoad.remove(loaded);
+            }
+
             if(step.extensions.isEmpty()) {
                 System.out.println("Cant solve dependencies");
                 System.out.println("All extensions: " + prettyPrint(extensions));

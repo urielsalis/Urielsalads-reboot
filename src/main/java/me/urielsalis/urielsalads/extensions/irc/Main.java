@@ -58,7 +58,7 @@ public class Main {
         }
         ircConfig = ConfigFactory.create(IRCConfig.class, props);
         System.out.println("Starting IRC");
-        api.connect(getServerParams(ircConfig.nick1(), Arrays.asList(ircConfig.nick2(), ircConfig.nick3()), ircConfig.realName(), ircConfig.ident(), ircConfig.server(), false), new Callback<IIRCState>()
+        new Thread(() -> api.connect(getServerParams(ircConfig.nick1(), Arrays.asList(ircConfig.nick2(), ircConfig.nick3()), ircConfig.realName(), ircConfig.ident(), ircConfig.server(), false), new Callback<IIRCState>()
         {
             @Override
             public void onSuccess(final IIRCState aIRCState)
@@ -79,7 +79,7 @@ public class Main {
             {
                 throw new RuntimeException(aErrorMessage);
             }
-        });
+        })).start();
     }
 
     private static void initEvents() {
@@ -104,6 +104,9 @@ public class Main {
             extapi.registerEvent("onUserQuit");
             extapi.registerEvent("onError");
             extapi.registerEvent("onChannelMode");
+            extapi.registerEvent("onServerNumericMessage");
+            extapi.registerEvent("onChannelMessage");
+
         } catch (ExtensionAPI.EventAlreadyExistsException e) {
             e.printStackTrace();
         }
@@ -123,12 +126,14 @@ public class Main {
             extapi.unRegisterEvent("onChannelNotice");
             extapi.unRegisterEvent("onChannelAction");
             extapi.unRegisterEvent("onChannelKick");
+            extapi.unRegisterEvent("onChannelMessage");
             extapi.unRegisterEvent("onMessage");
             extapi.unRegisterEvent("onTopicChange");
             extapi.unRegisterEvent("onUserPrivMessage");
             extapi.unRegisterEvent("onUserNotice");
             extapi.unRegisterEvent("onUserAction");
             extapi.unRegisterEvent("onServerNumericAction");
+            extapi.unRegisterEvent("onServerNumericMessage");
             extapi.unRegisterEvent("onServerNotice");
             extapi.unRegisterEvent("onNickChange");
             extapi.unRegisterEvent("onUserQuit");
@@ -169,7 +174,11 @@ public class Main {
         }
 
         public void onChannelMessage(ChannelPrivMsg aMsg) {
-            try { extapi.fire("onChannelMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg, aMsg.getChannelName())); } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try {
+                extapi.fire("onChannelMessage", aMsg);
+                Command command = parseCommand(aMsg, aMsg.getChannelName());
+                if(command != null) extapi.fire("commandEvent", command);
+            } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onChannelJoin(ChanJoinMessage aMsg) {
@@ -197,7 +206,11 @@ public class Main {
         }
 
         public void onUserPrivMessage(UserPrivMsg aMsg) {
-            try { extapi.fire("onUserPrivMessage", aMsg); extapi.fire("commandEvent", parseCommand(aMsg, null));} catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
+            try {
+                extapi.fire("onUserPrivMessage", aMsg);
+                Command command = parseCommand(aMsg, aMsg.getSource().getNick());
+                if(command != null) extapi.fire("commandEvent", command);
+            } catch (ExtensionAPI.EventDoesntExistsException e) { e.printStackTrace(); }
         }
 
         public void onUserNotice(UserNotice aMsg) {
@@ -235,13 +248,13 @@ public class Main {
         private Command parseCommand(AbstractPrivMsg aMsg, String channel) {
             String text = aMsg.getText();
             if(!text.startsWith(".")) {
-                return new Command("", new String[]{}, "", "");
+                return null;
             }
             String fromUser = aMsg.getSource().getNick();
             if(channel==null) channel = fromUser;
             String[] split = text.split(" ");
             if(split.length==0) {
-                return new Command("", "", "", "");
+                return null;
             } else if(split.length==1) {
                 return new Command(text.substring(1), "", channel, fromUser);
             } else {

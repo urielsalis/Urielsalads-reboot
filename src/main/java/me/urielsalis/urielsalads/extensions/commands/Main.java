@@ -52,14 +52,14 @@ public class Main {
         }
     }
 
-    private static class CommandListener implements ExtensionAPI.Listener {
+    public static class CommandListener implements ExtensionAPI.Listener {
         @Handler
         public void handle(me.urielsalis.urielsalads.extensions.irc.Main.Command command) {
-            //handle command
+        //handle command
             String channel = command.getArgs()[0];
-            switch(command.getName()) {
+            switch (command.getName()) {
                 case "sendMessage":
-                    String message = StringUtils.join(Arrays.asList(command.getArgs()), " ");
+                    String message = StringUtils.join(Arrays.asList(Arrays.copyOfRange(command.getArgs(), 1, command.getArgs().length)), " ");
                     api.message(channel, message);
                     break;
 
@@ -77,6 +77,7 @@ public class Main {
                         public void onSuccess(IRCChannel aObject) {
                             api.message(aObject.getName(), "Im UrielSalads, defender of the vegetables! Beware of my tomato cannons!");
                         }
+
                         @Override
                         public void onFailure(Exception aExc) {
 
@@ -84,15 +85,15 @@ public class Main {
                     });
                     break;
 
-                case "listExtesions":
+                case "listExtensions":
                     api.message(channel, ExtensionAPI.prettyPrint2(extapi.avaliableExtensions));
                     break;
 
-                case "listLoadedExtesions":
+                case "listLoadedExtensions":
                     api.message(channel, ExtensionAPI.prettyPrint2(extapi.loadedExtensions));
                     break;
 
-                case "unloadExtesion": {
+                case "unloadExtension": {
                     String name;
                     String version = null;
                     if (channel.contains("/")) {
@@ -109,7 +110,7 @@ public class Main {
                     }
                     break;
                 }
-                case "loadExtesion": {
+                case "loadExtension": {
                     String name;
                     String version = null;
                     if (channel.contains("/")) {
@@ -129,8 +130,8 @@ public class Main {
                 case "quit":
                     api.disconnect("But I dont want to go to sleep :o(");
                     break;
-
             }
+
         }
 
         @Override

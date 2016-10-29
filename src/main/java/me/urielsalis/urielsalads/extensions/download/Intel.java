@@ -27,7 +27,6 @@ public class Intel {
     public Date lastFullUpdate;
     public String name;
     public List<Driver> driver;
-    public List<Driver> manual; //this has priority while searching
     public List<Ark> ark;
     public boolean newConfig = true;
 
@@ -38,7 +37,6 @@ public class Intel {
         name = id;
         driver = new ArrayList<>();
         ark = new ArrayList<>();
-        manual = new ArrayList<>();
     }
 
     public static class Driver {

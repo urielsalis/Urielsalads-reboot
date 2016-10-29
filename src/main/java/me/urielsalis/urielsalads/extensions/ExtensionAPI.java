@@ -1,8 +1,8 @@
 package me.urielsalis.urielsalads.extensions;
 
+import net.engio.mbassy.bus.IMessagePublication;
 import net.engio.mbassy.bus.MBassador;
 import net.engio.mbassy.bus.error.IPublicationErrorHandler;
-import net.engio.mbassy.bus.publication.SyncAsyncPostCommand;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -73,12 +73,11 @@ public class ExtensionAPI {
         }
     }
 
-    public SyncAsyncPostCommand fire(String eventName, Object data) throws EventDoesntExistsException {
+    public IMessagePublication fire(String eventName, Object data) throws EventDoesntExistsException {
         if(data==null) return null;
         synchronized (bus) {
-
             if(!bus.containsKey(eventName)) throw new EventDoesntExistsException();
-            return bus.get(eventName).post(data);
+            return bus.get(eventName).post(data).asynchronously();
         }
     }
 

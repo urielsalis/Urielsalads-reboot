@@ -19,8 +19,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static me.urielsalis.urielsalads.extensions.download.DownloadMain.config;
-import static me.urielsalis.urielsalads.extensions.download.DownloadMain.writeJSON;
+import static me.urielsalis.urielsalads.extensions.download.DownloadMain.*;
 
 /**
  * UrielSalads
@@ -39,20 +38,20 @@ import static me.urielsalis.urielsalads.extensions.download.DownloadMain.writeJS
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-@ExtensionAPI.Extension(name = "nvidia-downloader", version = "1.0.0", dependencies = {"download", "irc"}, id = "nvidia-downloader/1.0.0")
+@ExtensionAPI.Extension(name = "nvidia-download", version = "1.0.0", dependencies = {"download", "irc"}, id = "nvidia-download/1.0.0")
 public class Main {
     static HashMap<String, Integer> PRODUCT_TYPES = new HashMap<>();
 
-    @ExtensionAPI.ExtensionInit("nvidia-downloader/1.0.0")
+    @ExtensionAPI.ExtensionInit("nvidia-download/1.0.0")
     public static void initNvidiaDownloader(ExtensionAPI api) {
         try {
             api.registerListener("commandEvent", new CommandListener());
         } catch (ExtensionAPI.EventDoesntExistsException e) {
             e.printStackTrace();
         }
-        if(config.nvidia.newConfig) {
+        if(getConfig().nvidia.newConfig) {
             fullUpdate();
-            config.intel.newConfig = false;
+            config.nvidia.newConfig = false;
             writeJSON();
         }
     }
@@ -83,7 +82,10 @@ public class Main {
     private static class CommandListener implements ExtensionAPI.Listener {
         @Handler
         public static void handle(me.urielsalis.urielsalads.extensions.irc.Main.Command command) {
-
+            if(command.getName().equals("nvidiaFullUpdate")) {
+                fullUpdate();
+                writeJSON();
+            }
         }
 
         @Override
@@ -187,6 +189,8 @@ public class Main {
                                             }
                                         }
                                         Elements lookupValuesStep4 = documentStep4.getRootElement().getFirstChildElement("LookupValues").getChildElements();
+                                        Config.GPU gpu = new Config.GPU(product.name);
+
                                         for (int e = 0; e < lookupValuesStep4.size(); e++) {
                                             Element lookupValue4 = lookupValuesStep4.get(e);
                                             Nvidia.Series.Product.OS os = new Nvidia.Series.Product.OS(lookupValue4);
@@ -195,11 +199,15 @@ public class Main {
                                                 //String  String RPF, String OperatingSystemID, String LanguageID, String Locale, String CUDAToolkit) {
                                                 String downloadLink = processRequest(series.id, product.id, 1, os.id, language, locale, 0);
                                                 os.downloadLink = downloadLink;
+                                                int arch = os.is64? 64:32;
+                                                gpu.addDownload(os.minified,arch, downloadLink);
                                                 //end step 5
                                             }
                                             //end step 4
                                             product.os.add(os);
+
                                         }
+                                        config.list.add(gpu);
                                     }
                                     //end step 3
                                     series.products.add(product);
@@ -218,12 +226,6 @@ public class Main {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static void main(String[] args) {
-        config = new Config("1.0.0", "test");
-        fullUpdate();
-        writeJSON();
     }
 
 }

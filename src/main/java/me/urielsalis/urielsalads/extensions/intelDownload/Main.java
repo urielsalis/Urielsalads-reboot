@@ -19,8 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static me.urielsalis.urielsalads.extensions.download.DownloadMain.config;
-import static me.urielsalis.urielsalads.extensions.download.DownloadMain.g;
+import static me.urielsalis.urielsalads.extensions.download.DownloadMain.*;
 
 /**
  * UrielSalads
@@ -47,7 +46,7 @@ public class Main {
     public static void initIntelDownload(ExtensionAPI api) {
         //fill config
         Main.api = api;
-        if(config.intel.newConfig) {
+        if(getConfig().intel.newConfig) {
             fullUpdate();
             config.intel.newConfig = false;
             writeJSON();
@@ -174,7 +173,7 @@ public class Main {
             ArrayList<Download> downloads = new ArrayList<>();
             EPMIdResults results = g.fromJson(new InputStreamReader((InputStream) request.getContent()), EPMIdResults.class);
             for (EPMIdResults.ResultsForDisplayImpl display : results.ResultsForDisplay) {
-                downloads.add(new Download(display));
+                downloads.add(new Download(display, driver));
             }
             return downloads;
         } catch (IOException e) {
@@ -184,7 +183,7 @@ public class Main {
     }
 
     private static synchronized void fillDownload(Intel.Driver driver, EPMIdResults.ResultsForDisplayImpl display) {
-        driver.download.add(new Download(display));
+        driver.download.add(new Download(display, driver));
     }
 
     private static synchronized void addDriver(Intel.Driver driver) {

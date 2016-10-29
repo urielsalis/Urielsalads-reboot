@@ -26,8 +26,31 @@ public class Download {
     public int epmID;
     public List<OS> os;
 
-    public Download() {
-
+    public Download(EPMIdResults.ResultsForDisplayImpl display, Intel.Driver driver) {
+        epmID = display.Id;
+        os = new ArrayList<>();
+        Config.GPU gpu = new Config.GPU(driver.name);
+        for(String str: display.OperatingSystemSet) {
+            String version = "TooOld";
+            int arch = str.contains("64") ? 64 : 32;
+            if(str.contains("7")) {
+                version = "7";
+            } else if(str.contains("8") && !str.contains("8.1")) {
+                version = "8";
+            } else if(str.contains("8.1")) {
+                version = "8.1";
+            } else if(str.contains("10")) {
+                version = "10";
+            } else if(str.contains("Vista")) {
+                version = "Vista";
+            } else if(str.contains("XP")) {
+                version = "XP";
+            }
+            if(version.equals("TooOld")) continue;
+            gpu.addDownload(version, arch, "https://downloadcenter.intel.com/download/"+epmID);
+            os.add(new OS(version, arch));
+        }
+        DownloadMain.config.list.add(gpu);
     }
 
     public Download(int epmID) {
@@ -35,22 +58,4 @@ public class Download {
         os = new ArrayList<>();
     }
 
-    public Download(EPMIdResults.ResultsForDisplayImpl display) {
-        epmID = display.Id;
-        os = new ArrayList<>();
-        for(String str: display.OperatingSystemSet) {
-            String version = "TooOld";
-            int arch = 32;
-            if(str.contains("7")) {
-                version = "7";
-            } else if(str.contains("7")) {
-                version = "8";
-            } else if(str.contains("7")) {
-                version = "8.1";
-            } else if(str.contains("7")) {
-                version = "10";
-            }
-            os.add(new OS(version, arch));
-        }
-    }
 }

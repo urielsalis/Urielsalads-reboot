@@ -5,9 +5,11 @@ import com.google.gson.GsonBuilder;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Scanner;
 
 /**
  * UrielSalads
@@ -31,32 +33,74 @@ public class DownloadMain {
     public static Gson g = new GsonBuilder().setPrettyPrinting().create();
 
     public static Config config;
+    static boolean initialized = false;
 
     public static Config getConfig() {
+        if(!initialized) {
+            if(new File("data.json").exists()) {
+                Scanner scanner = null;
+                try {
+                    scanner = new Scanner(new File("data.json"));
+                    String json = scanner.useDelimiter("\\A").next();
+
+                    config = new Gson().fromJson(json, Config.class);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (scanner != null) scanner.close();
+                }
+            } else {
+                config = new Config("1.0.0", "urielsalads-downloader");
+                writeJSON();
+            }
+            initialized = true;
+        }
         return config;
     }
 
     @ExtensionAPI.ExtensionInit("download/1.0.0")
-    public static void initDownload() {
+    public static void initDownload(ExtensionAPI api) {
         if(new File("data.json").exists()) {
-            config = DownloadMain.getConfig();
+            Scanner scanner = null;
+            try {
+                scanner = new Scanner(new File("data.json"));
+                String json = scanner.useDelimiter("\\A").next();
+
+                config = new Gson().fromJson(json, Config.class);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } finally {
+                if (scanner != null) scanner.close();
+            }
         } else {
             config = new Config("1.0.0", "urielsalads-downloader");
             writeJSON();
         }
+        initialized = true;
     }
 
     @ExtensionAPI.ExtensionUnload("download/1.0.0")
-    public static void unloadDownload() {
+    public static void unloadDownload(ExtensionAPI api) {
         writeJSON();
     }
 
     public static void writeJSON() {
         config.createdOn = new Date();
-        try (FileWriter writer = new FileWriter("intel.json")) {
+        Config config2 = new Config(config.version, "urielsalads");
+        config2.list = config.list;
+        config2.createdOn = config.createdOn;
+        config2.manual = config.manual;
+        try {
+            FileWriter writer = new FileWriter("data.json");
             g.toJson(config, writer);
+            writer.close();
+            FileWriter writer2 = new FileWriter("compressedData.json");
+            g.toJson(config2, writer2);
+            writer2.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 }

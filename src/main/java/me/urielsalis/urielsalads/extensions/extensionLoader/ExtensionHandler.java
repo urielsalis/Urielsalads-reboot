@@ -10,7 +10,6 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,10 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static me.urielsalis.urielsalads.extensions.ExtensionAPI.prettyPrint;
 /*
@@ -45,8 +40,7 @@ public class ExtensionHandler {
     // Gets module information in array for further processing
     private static ArrayList<ExtensionAPI.ExtensionData> extensions = new ArrayList<>();
     public static ExtensionAPI api = new ExtensionAPI();
-    public static ArrayList<LoadOrder> steps = new ArrayList<>();
-    public static ArrayList<ExtensionAPI.ExtensionData> alreadyLoaded = new ArrayList<>();
+    public static ArrayList<ExtensionAPI.ExtensionData> orderToLoad = new ArrayList<>();
 
     public static void loadExtensions() {
         System.out.println("Loading extensions for Urielsalads");
@@ -146,75 +140,39 @@ public class ExtensionHandler {
     }
 
     private static void runExtensions() {
-        for(LoadOrder order: steps) {
-            List<Callable<Object>> callables = new ArrayList<>();
-            for(final ExtensionAPI.ExtensionData data: order.extensions) {
-                callables.add(new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
-                        System.out.println("Loading " + data.extension.id());
-                        loadExtension(data);
-                        System.out.println(data.extension.id() + " Loaded");
-                        return null;
-                    }
-                });
-            }
-            ExecutorService service = Executors.newCachedThreadPool();
-            try {
-                service.invokeAll(callables);
-                while(service.awaitTermination(1, TimeUnit.SECONDS)) { //Wait till all threads finished
-                    service.awaitTermination(1, TimeUnit.SECONDS);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        for(ExtensionAPI.ExtensionData data: orderToLoad) {
+            System.out.println("Loading " + data.extension.id());
+            loadExtension(data);
+            System.out.println(data.extension.id() + " Loaded");
         }
     }
 
     private static void sortLoading() {
-        System.out.print("Dependency loading order");
+        System.out.println("Dependency loading order");
         ArrayList<ExtensionAPI.ExtensionData> toLoad = Lists.newArrayList(extensions);
-        LoadOrder order = new LoadOrder();
-        int counter = 1;
-        System.out.println("Step " + counter);
-        for(ExtensionAPI.ExtensionData extensionData: toLoad) {
-            String[] dependencies = extensionData.extension.dependencies();
-            if(dependencies.length==0) {
-                order.extensions.add(extensionData);
-                alreadyLoaded.add(extensionData);
-                System.out.print("  " + extensionData.extension.id());
-            }
-        }
-        steps.add(order);
-        counter++;
-        for(ExtensionAPI.ExtensionData loaded: alreadyLoaded) {
-            toLoad.remove(loaded);
-        }
-        while(alreadyLoaded.size() != extensions.size()) {
-            System.out.println("\nStep " + counter);
-            LoadOrder step = new LoadOrder();
-            for(ExtensionAPI.ExtensionData data: toLoad) {
-                if(dependenciesMet(data)) {
-                    step.extensions.add(data);
-                    alreadyLoaded.add(data);
-                    System.out.print("  " + data.extension.id());
+        int previosSize = toLoad.size();
+        int counter = 0;
+        while(orderToLoad.size() != extensions.size()) {
+            for (ExtensionAPI.ExtensionData data : toLoad) {
+                if (dependenciesMet(data)) {
+                    orderToLoad.add(data);
+                    System.out.println("  " + data.extension.id());
                 }
             }
-            for(ExtensionAPI.ExtensionData loaded: alreadyLoaded) {
+            for (ExtensionAPI.ExtensionData loaded : orderToLoad) {
                 toLoad.remove(loaded);
             }
-
-            if(step.extensions.isEmpty()) {
-                System.out.println("Cant solve dependencies");
-                System.out.println("All extensions: " + prettyPrint(extensions));
-                System.out.println("Loaded Extensions: " + prettyPrint(alreadyLoaded));
-                System.out.println("Left: " + prettyPrint(toLoad));
+            if(toLoad.size()==previosSize) {
+                counter++;
+            }
+            if(counter > 4) {
+                System.out.println("Issue sorting dependencies");
+                System.out.println("Loaded: " + prettyPrint(orderToLoad));
+                System.out.println("Not loaded: " + prettyPrint(toLoad));
                 System.exit(1);
             }
-            counter++;
+            previosSize = toLoad.size();
         }
-        counter--;
-        System.out.println("Loading possible in " + counter + " steps");
     }
 
     private static boolean dependenciesMet(ExtensionAPI.ExtensionData data) {
@@ -235,7 +193,7 @@ public class ExtensionHandler {
     }
 
     private static boolean alreadyLoaded(String nameToSearch, String versiontoSearch) {
-        for(ExtensionAPI.ExtensionData data: alreadyLoaded) {
+        for(ExtensionAPI.ExtensionData data: orderToLoad) {
             if(data.extension.name().equals(nameToSearch)) {
                 if(versiontoSearch==null) return true;
                 else if(versiontoSearch.contains("+") && isEqualOrHigher(data.extension.version(), versiontoSearch)) return true;
@@ -273,7 +231,7 @@ public class ExtensionHandler {
 
     private static void loadJars() {
         File directory = new File("extensions");
-        File[] files = directory.listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return name.endsWith(".jar");}});
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(".jar"));
 
         if (files != null) {
             for (File file : files) {

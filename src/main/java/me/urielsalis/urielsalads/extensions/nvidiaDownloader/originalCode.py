@@ -53,10 +53,7 @@ class NvidiaDriverGrabber():
 
 
 	def step1(self):
-		self.output["product_types"] = {}
-		for model in self.PRODUCT_TYPES:
-			self.output["product_types"][model["name"]] = {}
-		return self.output
+
 
 
 	# get ProductSeriesID

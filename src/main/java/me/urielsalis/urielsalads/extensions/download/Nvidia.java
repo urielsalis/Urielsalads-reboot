@@ -1,5 +1,10 @@
 package me.urielsalis.urielsalads.extensions.download;
 
+import nu.xom.Element;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * UrielSalads
  * Copyright (C) 2016 Uriel Salischiker
@@ -20,53 +25,80 @@ package me.urielsalis.urielsalads.extensions.download;
 public class Nvidia {
     public boolean newConfig = true;
 
-}
+    public List<ProductType> productTypes = new ArrayList<ProductType>();
 
-/*public class Nvidia { //TODO remove this
-    public boolean newConfig = true;
-    public Meta _meta;
-    public Map<String, Map<String, Map<String, Object>>> product_types;
+    public static class ProductType {
+        String name;
+        public List<Series> series;
+
+        public ProductType(String name) {
+            this.name = name;
+            series = new ArrayList<>();
+        }
+    }
 
     public static class Series {
-        public Meta _meta;
+        public boolean requiresProduct;
+        public int parentID;
+        public String name;
+        public int id;
+        public ArrayList<Product> products;
 
-        public Series(Meta _meta) {
-            this._meta = _meta;
+        public Series(Element lookupValue) {
+            requiresProduct = lookupValue.getAttribute("RequiresProduct").getValue().equals("True");
+            parentID = Integer.parseInt(lookupValue.getAttribute("ParentID").getValue());
+            name = lookupValue.getFirstChildElement("Name").getValue();
+            id = Integer.parseInt(lookupValue.getFirstChildElement("Value").getValue());
+            products = new ArrayList<>();
         }
 
-        public static class Meta {
+        public static class Product {
+            public String name;
+            public int id;
+            public int parentID;
+            public ArrayList<OS> os;
 
-            public int ProductTypeID;
-            public int ProductSeriesID;
-            public String ProductSeriesName;
-            public boolean SubProducts;
 
-            public Meta(int ProductTypeID, int ProductSeriesID, String ProductSeriesName, boolean SubProducts) {
-                this.ProductTypeID = ProductTypeID;
-                this.ProductSeriesID = ProductSeriesID;
-                this.ProductSeriesName = ProductSeriesName;
-                this.SubProducts = SubProducts;
+            public Product(Element lookupValue) {
+                parentID = Integer.parseInt(lookupValue.getAttribute("ParentID").getValue());
+                name = lookupValue.getFirstChildElement("Name").getValue();
+                id = Integer.parseInt(lookupValue.getFirstChildElement("Value").getValue());
+                os = new ArrayList<>();
             }
 
-            public static class Meta2 {
-                public String ProductID;
-                public String ProductName;
+            public static class OS {
+                public String code;
+                public String name;
+                public int id;
+                public boolean is64;
+                public String minified = null;
+                public String downloadLink;
+                public boolean shouldDownload = false;
 
-                public Meta2(String m_productID, String m_productName) {
-                    this.ProductID = m_productID;
-                    this.ProductName = m_productName;
+                public OS(Element lookupValue) {
+                    code = lookupValue.getAttribute("Code").getValue();
+                    name = lookupValue.getFirstChildElement("Name").getValue();
+                    id = Integer.parseInt(lookupValue.getFirstChildElement("Value").getValue());
+                    if(code.startsWith("10.0")) {
+                        minified = "10";
+                    } else if(code.startsWith("6.3")) {
+                        minified = "8.1";
+                    } else if(code.startsWith("6.2")) {
+                        minified = "8";
+                    } else if(code.startsWith("6.1")) {
+                        minified = "7";
+                    } else if(code.startsWith("6.0")) {
+                        minified = "Vista";
+                    } else if(code.startsWith("5.1")) {
+                        minified = "XP";
+                    }
+                    is64 = !(name.contains("32") || !name.contains("64"));
+                    shouldDownload = minified != null;
                 }
+
             }
         }
-    }
 
-    public static class Meta {
-        public String created_by;
-        public String created_on;
 
-        public Meta(String created_by, String created_on) {
-            this.created_on = created_on;
-            this.created_by = created_by;
-        }
     }
-}*/
+}

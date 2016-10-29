@@ -1,23 +1,23 @@
 package me.urielsalis.urielsalads.extensions.nvidiaDownloader;
 
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
+import me.urielsalis.urielsalads.extensions.download.Config;
 import me.urielsalis.urielsalads.extensions.download.Nvidia;
 import net.engio.mbassy.listener.Handler;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import nu.xom.*;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.text.DateFormat;
-import java.util.*;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static me.urielsalis.urielsalads.extensions.download.DownloadMain.config;
 import static me.urielsalis.urielsalads.extensions.download.DownloadMain.writeJSON;
@@ -97,10 +97,9 @@ public class Main {
         public String processUrl;
         public String locale;
         public int language;
-        public Date startTime;
-        public Date endTime;
         public ArrayList<String> errors;
         public int throttle = 5;
+        Builder parser = new Builder();
 
         public NvidiaDriverGrabber(String lookupUrl, String processUrl, String locale, int language, int throttle) {
             this.lookupUrl = lookupUrl;
@@ -108,279 +107,123 @@ public class Main {
             this.locale = locale;
             this.language = language;
             this.throttle = throttle;
-            this.startTime = new Date();
-            this.endTime = new Date(); //todo change this to actual end date
             this.errors = new ArrayList<>();
-            config.nvidia._meta = new Nvidia.Meta("Urielsalads nvidia-download 1.0.0", DateFormat.getDateInstance().format(startTime));
         }
 
-        public InputStream lookupRequest(int step, int value) {
+        public Document lookupRequest(int step, int value) {
             String args = "?TypeID=" + step + "&ParentID=" + value;
             System.out.println("--> " + this.lookupUrl + args);
-            InputStream stream = null;
             try {
-                URL url = new URL(this.lookupUrl+args);
-                stream = url.openStream();
-            } catch (IOException e) {
-                System.out.println("Sleeping for 80 seconds, then retrying");
-                try {
-                    TimeUnit.SECONDS.sleep(80);
-                    URL url = new URL(this.lookupUrl+args);
-                    stream = url.openStream();
-                } catch (InterruptedException | IOException e1) {
-                    e1.printStackTrace();
-                }
-
+                URL url = new URL(lookupUrl+args);
+                InputStream stream = url.openStream();
+                return parser.build(stream);
+            } catch (ParsingException | IOException e) {
                 e.printStackTrace();
             }
-            return stream;
+            return null;
         }
 
-        public String processRequest(String ProductSeriesID, String ProductFamilyID, String RPF, String OperatingSystemID, String LanguageID, String Locale, String CUDAToolkit) {
+        public String processRequest(int ProductSeriesID, int ProductFamilyID, int RPF, int OperatingSystemID, int LanguageID, String Locale, int CUDAToolkit) {
             String args = "?psid="+ProductSeriesID+"&pfid="+ProductFamilyID+"&rpf="+RPF+"&osid="+OperatingSystemID+"&lid="+LanguageID+"&lang="+Locale+"&ctk="+CUDAToolkit;
             System.out.println("==> " + this.processUrl + args);
-            InputStream stream = null;
             try {
-                URL url = new URL(this.lookupUrl+args);
-                stream = url.openStream();
+                URLConnection conn = new URL(processUrl + args).openConnection();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                return reader.lines().collect(Collectors.joining("\n"));
             } catch (IOException e) {
-                System.out.println("Sleeping for 80 seconds, then retrying");
-                try {
-                    TimeUnit.SECONDS.sleep(80);
-                    URL url = new URL(this.processUrl+args);
-                    stream = url.openStream();
-                } catch (InterruptedException | IOException e1) {
-                    e1.printStackTrace();
-                }
-
                 e.printStackTrace();
             }
-            if(stream!=null) {
-                Scanner s = new Scanner(stream).useDelimiter("\\A");
-                String result = s.hasNext() ? s.next() : "";
-                s.close();
-                try {
-                    stream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return result;
-            }
-            return "";
+
+            return null;
         }
 
         public void parse() {
+            try {
+                for (Map.Entry<String, Integer> entry : PRODUCT_TYPES.entrySet()) {
+                    Nvidia.ProductType productType = new Nvidia.ProductType(entry.getKey()); //start step 1
+                    //start step 2
+                    {
+                        Document documentStep2 = lookupRequest(2, entry.getValue());
+                        if (documentStep2 == null) {
+                            System.out.println("Sleeping for 80 secs and trying again");
+                            TimeUnit.SECONDS.sleep(80);
+                            documentStep2 = lookupRequest(2, entry.getValue());
+                            if (documentStep2 == null) {
+                                System.out.println("Failed");
+                                System.exit(1);
+                            }
+                        }
+                        Elements lookupValuesStep2 = documentStep2.getRootElement().getFirstChildElement("LookupValues").getChildElements();
+                        for (int i = 0; i < lookupValuesStep2.size(); i++) {
+                            Element lookupValue2 = lookupValuesStep2.get(i);
 
+                            Nvidia.Series series = new Nvidia.Series(lookupValue2);
+                            //start step 3
+                            {
+                                Document documentStep3 = lookupRequest(3, series.id);
+                                if (documentStep3 == null) {
+                                    System.out.println("Sleeping for 80 secs and trying again");
+                                    TimeUnit.SECONDS.sleep(80);
+                                    documentStep3 = lookupRequest(3, series.id);
+                                    if (documentStep3 == null) {
+                                        System.out.println("Failed");
+                                        System.exit(1);
+                                    }
+                                }
+                                Elements lookupValuesStep3 = documentStep3.getRootElement().getFirstChildElement("LookupValues").getChildElements();
+                                for (int j = 0; j < lookupValuesStep3.size(); j++) {
+                                    Element lookupValue3 = lookupValuesStep3.get(j);
+                                    Nvidia.Series.Product product = new Nvidia.Series.Product(lookupValue3);
+                                    {
+                                        //start step 4
+                                        Document documentStep4= lookupRequest(4, series.id);
+                                        if (documentStep4 == null) {
+                                            System.out.println("Sleeping for 80 secs and trying again");
+                                            TimeUnit.SECONDS.sleep(80);
+                                            documentStep4 = lookupRequest(4, entry.getValue());
+                                            if (documentStep4 == null) {
+                                                System.out.println("Failed");
+                                                System.exit(1);
+                                            }
+                                        }
+                                        Elements lookupValuesStep4 = documentStep4.getRootElement().getFirstChildElement("LookupValues").getChildElements();
+                                        for (int e = 0; e < lookupValuesStep4.size(); e++) {
+                                            Element lookupValue4 = lookupValuesStep4.get(e);
+                                            Nvidia.Series.Product.OS os = new Nvidia.Series.Product.OS(lookupValue4);
+                                            if(os.shouldDownload) {
+                                                //start step 5
+                                                //String  String RPF, String OperatingSystemID, String LanguageID, String Locale, String CUDAToolkit) {
+                                                String downloadLink = processRequest(series.id, product.id, 1, os.id, language, locale, 0);
+                                                os.downloadLink = downloadLink;
+                                                //end step 5
+                                            }
+                                            //end step 4
+                                            product.os.add(os);
+                                        }
+                                    }
+                                    //end step 3
+                                    series.products.add(product);
+                                }
+
+
+
+                            }
+                            //end step 2
+                            productType.series.add(series);
+                        }
+                    }
+                    config.nvidia.productTypes.add(productType); //end step 1
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private static class ExtremeBotCompatibleNvidiaDriverGrabber { //todo remove this
-        public String lookupUrl;
-        public String processUrl;
-        public String locale;
-        public int language;
-        public Date startTime;
-        public Date endTime;
-        public ArrayList<String> errors;
-        public int throttle = 5;
-
-        public NvidiaDriverGrabber(String lookupUrl, String processUrl, String locale, int language, int throttle) {
-            this.lookupUrl = lookupUrl;
-            this.processUrl = processUrl;
-            this.locale = locale;
-            this.language = language;
-            this.throttle = throttle;
-            this.startTime = new Date();
-            this.endTime = new Date(); //todo change this to actual end date
-            this.errors = new ArrayList<>();
-            config.nvidia._meta = new Nvidia.Meta("Urielsalads nvidia-download 1.0.0", DateFormat.getDateInstance().format(startTime));
-        }
-
-        public InputStream lookupRequest(int step, int value) {
-            String args = "?TypeID=" + step + "&ParentID=" + value;
-            System.out.println("--> " + this.lookupUrl + args);
-            InputStream stream = null;
-            try {
-                URL url = new URL(this.lookupUrl+args);
-                stream = url.openStream();
-            } catch (IOException e) {
-                System.out.println("Sleeping for 80 seconds, then retrying");
-                try {
-                    TimeUnit.SECONDS.sleep(80);
-                    URL url = new URL(this.lookupUrl+args);
-                    stream = url.openStream();
-                } catch (InterruptedException | IOException e1) {
-                    e1.printStackTrace();
-                }
-
-                e.printStackTrace();
-            }
-            return stream;
-        }
-
-        public String processRequest(String ProductSeriesID, String ProductFamilyID, String RPF, String OperatingSystemID, String LanguageID, String Locale, String CUDAToolkit) {
-            String args = "?psid="+ProductSeriesID+"&pfid="+ProductFamilyID+"&rpf="+RPF+"&osid="+OperatingSystemID+"&lid="+LanguageID+"&lang="+Locale+"&ctk="+CUDAToolkit;
-            System.out.println("==> " + this.processUrl + args);
-            InputStream stream = null;
-            try {
-                URL url = new URL(this.lookupUrl+args);
-                stream = url.openStream();
-            } catch (IOException e) {
-                System.out.println("Sleeping for 80 seconds, then retrying");
-                try {
-                    TimeUnit.SECONDS.sleep(80);
-                    URL url = new URL(this.processUrl+args);
-                    stream = url.openStream();
-                } catch (InterruptedException | IOException e1) {
-                    e1.printStackTrace();
-                }
-
-                e.printStackTrace();
-            }
-            if(stream!=null) {
-                Scanner s = new Scanner(stream).useDelimiter("\\A");
-                String result = s.hasNext() ? s.next() : "";
-                s.close();
-                try {
-                    stream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return result;
-            }
-            return "";
-        }
-
-        public void step1() {
-            config.nvidia.product_types = new HashMap<>();
-            for(String key: PRODUCT_TYPES.keySet()) {
-                config.nvidia.product_types.put(key, new HashMap<>());
-            }
-        }
-        //get ProductSeriesID
-        public void step2() {
-            for(Map.Entry<String, Integer> ptype: PRODUCT_TYPES.entrySet()) {
-                try {
-                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                    InputStream stream = lookupRequest(2, ptype.getValue());
-                    if(stream != null) {
-                        Document doc = dBuilder.parse(stream);
-                        doc.getDocumentElement().normalize();
-                        NodeList nodes = doc.getElementsByTagName("LookupValueSearch").item(0).getFirstChild().getChildNodes();
-                        for (int i = 0; i < nodes.getLength(); i++) {
-                            Node node = nodes.item(i);
-                            if (node.getNodeType() == Node.ELEMENT_NODE) {
-                                Element element = (Element) node;
-                                boolean m_RequiresProduct = element.getAttribute("RequiresProduct").equals("True");
-                                String m_ParentID = element.getAttribute("ParentID");
-                                String m_SeriesName = element.getElementsByTagName("Name").item(0).getTextContent();
-                                int m_SeriesID = Integer.parseInt(element.getElementsByTagName("Value").item(0).getTextContent());
-                                config.nvidia.product_types.get(ptype.getKey()).put(m_SeriesName, new HashMap<String, Object>());
-                                config.nvidia.product_types.get(ptype.getKey()).get(m_SeriesName).put("_meta", new Nvidia.Series(new Nvidia.Series.Meta(ptype.getValue(), m_SeriesID, m_SeriesName, m_RequiresProduct)));
-                            } else {
-                                System.out.println(node.getBaseURI() + " its not a element wtf");
-                            }
-                        }
-                    }
-                    if (stream != null) {
-                        stream.close();
-                    }
-                    TimeUnit.SECONDS.sleep(throttle);
-                } catch (ParserConfigurationException | SAXException | IOException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }
-
-        //get ProductFamilyID
-        public void step3() {
-            for(Map.Entry<String, Map<String, Map<String, Object>>> ptype: config.nvidia.product_types.entrySet()) {
-                for(Map.Entry<String, Map<String, Object>> Series: ptype.getValue().entrySet()) {
-                    Map<String, Object> series = Series.getValue();
-                    //if(!series._meta.SubProducts)
-                    //    continue;
-                    System.out.println(((Nvidia.Series.Meta) series.get("_meta")).ProductSeriesName);
-                    try {
-                        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                        InputStream stream = lookupRequest(3, ((Nvidia.Series.Meta) series.get("_meta")).ProductSeriesID);
-                        if (stream != null) {
-                            Document doc = dBuilder.parse(stream);
-                            doc.getDocumentElement().normalize();
-                            NodeList nodes = doc.getElementsByTagName("LookupValueSearch").item(0).getFirstChild().getChildNodes();
-                            for (int i = 0; i < nodes.getLength(); i++) {
-                                Node node = nodes.item(i);
-                                if (node.getNodeType() == Node.ELEMENT_NODE) {
-                                    Element element = (Element) node;
-                                    String m_ProductName = element.getElementsByTagName("Name").item(0).getTextContent();
-                                    String m_ProductID = element.getElementsByTagName("Value").item(0).getTextContent();
-                                    series.put(m_ProductName, new HashMap<String, Object>());
-                                    ((HashMap<String, Object>) series.get(m_ProductName)).put("_meta", new Nvidia.Series.Meta.Meta2(m_ProductID, m_ProductName));
-                                } else {
-                                    System.out.println(node.getBaseURI() + " its not a element wtf");
-                                }
-                            }
-                            TimeUnit.SECONDS.sleep(throttle);
-
-                        }
-                    } catch (SAXException | ParserConfigurationException | IOException | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-        //getOSID
-        public void step4() {
-            for(Map.Entry<String, Map<String, Map<String, Object>>> ptype: config.nvidia.product_types.entrySet()) {
-                for (Map.Entry<String, Map<String, Object>> Series : ptype.getValue().entrySet()) {
-                    if(Series.getKey().equals("_meta")) continue;
-                    Map<String, Object> series = Series.getValue();
-                    try{
-                        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                        InputStream stream = lookupRequest(4, ((Nvidia.Series.Meta) series.get("_meta")).ProductSeriesID);
-                        if (stream != null) {
-                            Document doc = dBuilder.parse(stream);
-                            doc.getDocumentElement().normalize();
-                            NodeList nodes = doc.getElementsByTagName("LookupValueSearch").item(0).getFirstChild().getChildNodes();
-                            for (int i = 0; i < nodes.getLength(); i++) {
-                                Node node = nodes.item(i);
-                                if (node.getNodeType() == Node.ELEMENT_NODE) {
-                                    Element element = (Element) node;
-                                    String m_OSCode = element.getAttribute("Code");
-                                    String m_OSName = element.getElementsByTagName("Name").item(0).getTextContent();
-                                    String m_OSID = element.getElementsByTagName("Value").item(0).getTextContent();
-                                    int ProductSeriesID = ((Nvidia.Series.Meta) series.get("_meta")).ProductSeriesID;
-                                    for(Object obj: series.values()) {
-                                        Map<String, Object> product = (Map<String, Object>) obj;
-                                        String ProductName = ((Nvidia.Series.Meta.Meta2) product.get("_meta")).ProductName;
-                                        TimeUnit.SECONDS.sleep(throttle);
-
-                                    }
-
-                                } else {
-                                    System.out.println(node.getBaseURI() + " its not a element wtf");
-                                }
-                            }
-                        }
-                    } catch (SAXException | ParserConfigurationException | IOException | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                        /*
-                        self.output["product_types"][ptype["name"]][series["_meta"]["ProductSeriesName"]][product["_meta"]["ProductName"]][m_OSName] = \
-                            {
-                                "_meta": {
-                                    "OSCode": m_OSCode,
-                                    "OSName": m_OSName,
-                                    "OSID": m_OSID
-                                }
-                            };
-                         */
-                }
-            }
-        }
+    public static void main(String[] args) {
+        config = new Config("1.0.0", "test");
+        fullUpdate();
+        writeJSON();
     }
 
 }

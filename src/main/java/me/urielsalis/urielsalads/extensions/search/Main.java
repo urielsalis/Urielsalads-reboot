@@ -1,5 +1,7 @@
 package me.urielsalis.urielsalads.extensions.search;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.ircclouds.irc.api.domain.messages.ChannelPrivMsg;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import me.urielsalis.urielsalads.extensions.download.Config;
@@ -10,6 +12,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 
 /**
@@ -32,6 +35,7 @@ import java.net.URL;
 @ExtensionAPI.Extension(name = "search", version = "1.0.0", id = "search/1.0.0", dependencies = {"irc", "download", "amd-download", "nvidia-download", "intel-download"})
 public class Main {
     private static ExtensionAPI api;
+    private static Gson gson = new GsonBuilder().create();
 
     @ExtensionAPI.ExtensionInit("search/1.0.0")
     public static void intelSearchInit(ExtensionAPI api) {
@@ -106,6 +110,39 @@ public class Main {
         }
     }
 
+    public static void findCPU(String tmp, String minified, boolean is64, String channel) {
+        //ark.intel.com
+        String[] strs = tmp.split("\\s+");
+        String cpu = null;
+        for(String str: strs) {
+            if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {
+                cpu = str;
+                break;
+            }
+        }
+        try {
+            if(cpu != null) {
+                InputStreamReader reader = new InputStreamReader(new URL("http://odata.intel.com/API/v1_0/Products/Processors()?api_key="+me.urielsalis.urielsalads.Main.apiKey+"&$select=ProductId,CodeNameEPMId,GraphicsModel&$filter=substringof(%27"+cpu+"%27,ProductName)&$format=json").openStream());
+                Ark ark = gson.fromJson(reader, Ark.class);
+                boolean showMessage = true;
+                for(Ark.CPU cpu2: ark.d) {
+                    if(cpu2.GraphicsModel != null) {
+                        //search in database
+                        String message = findDriver(cpu2.GraphicsModel, minified, is64, channel, false);
+                        if(showMessage)
+                            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Ark: " + message);
+                        showMessage = false;
+                        break;
+                    }
+                }
+                if(showMessage)
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Cant find "+cpu+" in ark");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void parseDxdiag(String s, String channel) {
         String minified = "";
         boolean is64 = false;
@@ -116,6 +153,7 @@ public class Main {
                     Element code = document.select(".code").first();
                     String value = code.select(".paste").first().select("pre").first().text();
                     String[] lines2 = value.split("\n");
+                    boolean showedCpu = false;
                     for(String line2: lines2) {
                         if (line2.contains("Operating System")) {
                             if (line2.contains("64")) is64 = true;
@@ -123,7 +161,10 @@ public class Main {
                             minified = split[3];
                         } else if (line2.contains("Card name")) {
                             String card = line2.trim().split(":")[1];
-                            findDriver(card, minified, is64, channel);
+                            findDriver(card, minified, is64, channel, true);
+                        } else if (!showedCpu && line2.contains("Processor: ") && !line2.contains("Video")) {
+                            findCPU(line2.trim().split(":")[1].trim(), minified, is64, channel);
+                            showedCpu = true;
                         }
                     }
                 } catch (IOException e) {
@@ -135,29 +176,38 @@ public class Main {
         }
     }
 
-    private static void findDriver(String card, String minified, boolean is64, String channel) {
-        if(card.contains("Standard VGA") || card.contains("Microsoft Basic")) {
-            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Cant process those without ark yet. :(");
-        } else {
-            card = card.replace("NVIDIA ", "").replace("(R)", "").replace("AMD ", "");
+    private static String findDriver(String card, String minified, boolean is64, String channel, boolean showMessage2) {
+        boolean showMessage = true;
+        if (!card.contains("Standard VGA") && !card.contains("Microsoft")) {
+            card = card.replace("NVIDIA ", "").replace("(R)", "").replace("AMD ", "").replace("®", "").trim();
             for(Config.GPU gpu: DownloadMain.config.manual)  {
-                if(contains(gpu.name, card)) {
+                if(contains(gpu.name, card) && showMessage) {
                     String download = gpu.getDownload(minified, is64);
                     if(download.isEmpty()) continue;
-                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
-                    return;
+                    if(showMessage2)
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
+                    else return card+": "+download;
+                    showMessage = false;
+                    break;
                 }
             }
             for(Config.GPU gpu: DownloadMain.config.list)  {
-                if(contains(gpu.name, card)) {
+                if(contains(gpu.name, card) && showMessage) {
                     String download = gpu.getDownload(minified, is64);
                     if(download.isEmpty()) continue;
-                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
-                    return;
+                    if(showMessage2)
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
+                    else return card+": "+download;
+                    showMessage = false;
+                    return null;
                 }
             }
-            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not found");
+            if(!showMessage) return null;
+            if(showMessage2)
+                me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not found");
+            else return "Not found";
         }
+        return "Not found";
     }
 
     private static boolean contains(String str1, String str2) {

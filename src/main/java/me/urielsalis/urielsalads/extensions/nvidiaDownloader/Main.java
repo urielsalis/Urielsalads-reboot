@@ -127,7 +127,7 @@ public class Main {
 
         public String processRequest(int ProductSeriesID, int ProductFamilyID, int RPF, int OperatingSystemID, int LanguageID, String Locale, int CUDAToolkit) {
             String args = "?psid="+ProductSeriesID+"&pfid="+ProductFamilyID+"&rpf="+RPF+"&osid="+OperatingSystemID+"&lid="+LanguageID+"&lang="+Locale+"&ctk="+CUDAToolkit;
-            System.out.println("==> " + this.processUrl + args);
+            System.out.println("  ==> " + this.processUrl + args);
             try {
                 URLConnection conn = new URL(processUrl + args).openConnection();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));

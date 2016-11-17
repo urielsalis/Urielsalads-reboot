@@ -6,6 +6,7 @@ import com.ircclouds.irc.api.domain.messages.ChannelPrivMsg;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import me.urielsalis.urielsalads.extensions.download.Config;
 import me.urielsalis.urielsalads.extensions.download.DownloadMain;
+import me.urielsalis.urielsalads.extensions.irc.ChatFormat;
 import net.engio.mbassy.listener.Handler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -130,13 +131,13 @@ public class Main {
                         //search in database
                         String message = findDriver(cpu2.GraphicsModel, minified, is64, channel, false);
                         if(showMessage)
-                            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Ark: " + message);
+                            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.GREEN + "Ark: " + ChatFormat.NORMAL + message);
                         showMessage = false;
                         break;
                     }
                 }
                 if(showMessage)
-                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Cant find "+cpu+" in ark");
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.RED + "Cant find "+ChatFormat.NORMAL+cpu+ChatFormat.RED + " in ark");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -185,8 +186,8 @@ public class Main {
                     String download = gpu.getDownload(minified, is64);
                     if(download.isEmpty()) continue;
                     if(showMessage2)
-                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
-                    else return card+": "+download;
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download);
+                    else return ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download;
                     showMessage = false;
                     break;
                 }
@@ -196,8 +197,8 @@ public class Main {
                     String download = gpu.getDownload(minified, is64);
                     if(download.isEmpty()) continue;
                     if(showMessage2)
-                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, card + ": " + download);
-                    else return card+": "+download;
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download);
+                    else return ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download;
                     showMessage = false;
                     return null;
                 }

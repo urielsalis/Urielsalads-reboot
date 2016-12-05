@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Main {
-    public static String apiKey = "8A5F48B811A34F2B9A06C1F6BDDFECAD";
+    public static String apiKey = "asd";
 
     public static void main(String[] args) {
         long nanotime = System.nanoTime();

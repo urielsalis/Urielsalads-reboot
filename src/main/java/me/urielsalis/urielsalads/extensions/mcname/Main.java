@@ -4,8 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.ircclouds.irc.api.Callback;
-import com.ircclouds.irc.api.domain.IRCChannel;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import me.urielsalis.urielsalads.extensions.irc.ChatFormat;
 import net.engio.mbassy.listener.Handler;
@@ -19,7 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.time.Instant;
 import java.util.Date;
 
 import static me.urielsalis.urielsalads.extensions.irc.Main.api;
@@ -61,8 +59,24 @@ public class Main {
 
         private String getMessage(String s, boolean extended) {
             if(s==null || s.isEmpty()) return "Invalid username";
+            long unixTimestamp = Instant.now().getEpochSecond();
+
+            String result = findInfo(s, extended, false, 0);
+            if(result==null || result.isEmpty()) {
+                result = findInfo(s, extended, true, unixTimestamp-2500); //2500 seems to always work, get previous name
+                if(result==null || result.isEmpty()) {
+                    result = findInfo(s, extended, true, 0); //get original name
+                    if (result==null || result.isEmpty()) return ChatFormat.RED+"Username doesn't exists"+ChatFormat.NORMAL;
+                }
+            }
+            return result;
+        }
+
+        private String findInfo(String s, boolean extended, boolean previousName, long timestamp) {
             try {
-                URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + s);
+                String str = "https://api.mojang.com/users/profiles/minecraft/" + s;
+                if(previousName) str = str+"?at="+timestamp;
+                URL url = new URL(str);
                 HttpURLConnection request = (HttpURLConnection) url.openConnection();
                 request.connect();
 
@@ -74,27 +88,23 @@ public class Main {
                 String currentName = rootobj.get("name").getAsString();
                 boolean migrated = true;
                 boolean paid = true;
-                if(rootobj.has("legacy")) migrated = false;
-                if(rootobj.has("demo")) paid = false;
+                if (rootobj.has("legacy")) migrated = false;
+                if (rootobj.has("demo")) paid = false;
                 String[] names = getNames(id, extended);
                 StringBuilder output = new StringBuilder();
-                output.append(ChatFormat.BOLD + currentName+ChatFormat.NORMAL+": " + ChatFormat.BLUE+"UUID: "+ChatFormat.NORMAL+id+" ");
+                if(previousName) output.append(ChatFormat.RED + "Name was changed to: " +ChatFormat.NORMAL);
+                output.append(ChatFormat.BOLD + currentName + ChatFormat.NORMAL + ": " + ChatFormat.BLUE + "UUID: " + ChatFormat.NORMAL + id + " ");
                 output.append(paid ? ChatFormat.GREEN + "PAID " + ChatFormat.NORMAL : ChatFormat.RED + "DEMO " + ChatFormat.NORMAL);
                 output.append(migrated ? ChatFormat.YELLOW + "MIGRATED " + ChatFormat.NORMAL : ChatFormat.RED + "LEGACY " + ChatFormat.NORMAL);
-                if(names.length > 0) {
+                if (names.length > 0) {
                     String namesStr = StringUtils.join(names, ", ");
-                    output.append(ChatFormat.DARK_GRAY + "Previous names: " + ChatFormat.NORMAL + namesStr);
-                } else {
-                    output.append(". " + ChatFormat.OLIVE + "Username is the latest one" + ChatFormat.NORMAL);
+                    output.append("\n" + ChatFormat.DARK_GRAY + "Previous names: " + ChatFormat.NORMAL + namesStr);
                 }
                 return output.toString();
-
-            } catch (MalformedURLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+                return null;
             }
-            return ChatFormat.RED+"Username doesn't exists"+ChatFormat.NORMAL;
         }
 
         private String[] getNames(String id, boolean extended) {

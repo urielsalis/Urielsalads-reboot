@@ -2,7 +2,6 @@ package me.urielsalis.urielsalads.extensions.irc;
 
 import com.ircclouds.irc.api.Callback;
 import com.ircclouds.irc.api.IRCApi;
-import com.ircclouds.irc.api.IRCApiImpl;
 import com.ircclouds.irc.api.IServerParameters;
 import com.ircclouds.irc.api.domain.IRCServer;
 import com.ircclouds.irc.api.domain.messages.*;
@@ -46,7 +45,7 @@ public class Main {
     @ExtensionAPI.ExtensionInit("irc/1.0.0")
     public static void initIRC(ExtensionAPI extapi) {
         Main.extapi = extapi;
-        Main.api = new IRCApiImpl(true);
+        Main.api = new IRCAPIClass(true);
         initEvents();
         System.out.println("Reading configs");
         Properties props = new Properties();

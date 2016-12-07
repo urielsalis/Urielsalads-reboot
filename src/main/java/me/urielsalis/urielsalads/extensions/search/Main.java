@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.ircclouds.irc.api.domain.messages.ChannelPrivMsg;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import me.urielsalis.urielsalads.extensions.download.Config;
+import me.urielsalis.urielsalads.extensions.download.Download;
 import me.urielsalis.urielsalads.extensions.download.DownloadMain;
 import me.urielsalis.urielsalads.extensions.irc.ChatFormat;
 import net.engio.mbassy.listener.Handler;
@@ -65,7 +66,36 @@ public class Main {
             switch (command.getName()) {
                 case "dx":
                     parseDxdiag(command.getArgs()[0], command.getChannel());
+                    break;
+                case "addGPU":
+                    Config.GPU gpu = new Config.GPU(arrayToString(command.getArgs()));
+                    DownloadMain.config.manual.add(gpu);
+                    DownloadMain.writeJSON();
+                    break;
+                case "delGPU":
+                    Config.GPU gpu2 = new Config.GPU(arrayToString(command.getArgs()));
+                    DownloadMain.config.manual.remove(gpu2);
+                    DownloadMain.writeJSON();
+                    break;
+                case "setDownload":
+                    String[] arguments = arrayToString(command.getArgs()).split("\\|");
+                    if(arguments.length < 3) return;
+                    for(Config.GPU gpu3: DownloadMain.config.manual) {
+                        if(gpu3.name.equals(arguments[0])) {
+                            gpu3.addDownload(arguments[1], Integer.parseInt(arguments[2]), arguments[3]);
+                        }
+                    }
+                    DownloadMain.writeJSON();
+                    break;
             }
+        }
+
+        private static String arrayToString(String[] args) {
+            StringBuilder builder = new StringBuilder();
+            for(String string: args) {
+                builder.append(string).append(" ");
+            }
+            return builder.toString().trim();
         }
 
         @Override
@@ -117,6 +147,7 @@ public class Main {
         String cpu = null;
         for(String str: strs) {
             if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {
+                if(str.charAt(0)=='Q' || str.charAt(0)=='E' || str.charAt(0)=='T' || str.charAt(0)=='L') continue;
                 cpu = str;
                 break;
             }
@@ -179,36 +210,70 @@ public class Main {
 
     private static String findDriver(String card, String minified, boolean is64, String channel, boolean showMessage2) {
         boolean showMessage = true;
-        if (!card.contains("Standard VGA") && !card.contains("Microsoft")) {
-            card = card.replace("NVIDIA ", "").replace("(R)", "").replace("AMD ", "").replace("®", "").trim();
-            for(Config.GPU gpu: DownloadMain.config.manual)  {
-                if(contains(gpu.name, card) && showMessage) {
+        String latestFound = "";
+        if (!card.contains("Standard VGA") && !card.contains("Microsoft Basic")) {
+            card = resolveWrong(card.replace("NVIDIA ", "").replace("(R)", "").replace("AMD ", "").replace("®", "").trim());
+            for (Config.GPU gpu : DownloadMain.config.manual) {
+                if (contains(gpu.name, card) && showMessage) {
                     String download = gpu.getDownload(minified, is64);
-                    if(download.isEmpty()) continue;
-                    if(showMessage2)
-                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download);
-                    else return ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download;
+                    if (download.isEmpty()) {
+                        latestFound = gpu.getLatest(latestFound, is64);
+                        continue;
+                    }
+                    if (showMessage2)
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download);
+                    else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download;
                     showMessage = false;
                     break;
                 }
             }
-            for(Config.GPU gpu: DownloadMain.config.list)  {
-                if(contains(gpu.name, card) && showMessage) {
+            for (Config.GPU gpu : DownloadMain.config.list) {
+                if (contains(gpu.name, card) && showMessage) {
                     String download = gpu.getDownload(minified, is64);
-                    if(download.isEmpty()) continue;
-                    if(showMessage2)
-                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download);
-                    else return ChatFormat.BLUE + card+": "+ ChatFormat.NORMAL + download;
+                    if (download.isEmpty()) {
+                        latestFound = gpu.getLatest(latestFound, is64);
+                        continue;
+                    }
+                    if (showMessage2)
+                        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download);
+                    else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download;
                     showMessage = false;
                     return null;
                 }
             }
-            if(!showMessage) return null;
-            if(showMessage2)
-                me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not found");
-            else return "Not found";
+            if (!showMessage) return null;
+            if (showMessage2)
+                if (latestFound.isEmpty()) {
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not Found - Perform Manual Check");
+                } else {
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.RED + "Downgrade to Windows " + latestFound + ChatFormat.NORMAL);
+                }
+            else {
+                if(latestFound.isEmpty()) {
+                    return "Not Found - Perform Manual Check";
+                } else {
+                    return "Downgrade to Windows " + latestFound;
+                }
+            }
         }
-        return "Not found";
+        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not Found - Perform Manual Check");
+        return "Not Found - Perform Manual Check";
+    }
+
+    private static String resolveWrong(String card) {
+        if(card.contains("/")|| card.contains("(")) {
+            StringBuilder builder = new StringBuilder();
+            String[] words = card.split("\\s+");
+            for(String word: words) {
+                if(word.contains("(")) break;
+                if(word.contains("/")) {
+                    builder.append(word.split("/")[0]).append(" ");
+                } else {
+                    builder.append(word).append(" ");
+                }
+            }
+            return builder.toString().trim();
+        } else return card;
     }
 
     private static boolean contains(String str1, String str2) {

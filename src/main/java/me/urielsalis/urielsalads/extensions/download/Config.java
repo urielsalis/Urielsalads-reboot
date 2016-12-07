@@ -39,6 +39,22 @@ public class Config {
     }
 
     public static class GPU {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            GPU gpu = (GPU) o;
+
+            return name != null ? name.equals(gpu.name) : gpu.name == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            return name != null ? name.hashCode() : 0;
+        }
+
         public String name;
         public String downloadLinkWin6410 = "";
         public String downloadLinkWin6481 = "";
@@ -131,6 +147,80 @@ public class Config {
                 }
             }
             return "Not found for " + this.name;
+        }
+
+        public String getLatest(String latestFound, boolean is64) {
+            switch (latestFound) {
+                case "XP":
+                    if (is64) {
+                        if (!downloadLinkWin6410.isEmpty()) return "10";
+                        if (!downloadLinkWin6481.isEmpty()) return "8.1";
+                        if (!downloadLinkWin648.isEmpty()) return "8";
+                        if (!downloadLinkWin647.isEmpty()) return "7";
+                        if (!downloadLinkWin64Vista.isEmpty()) return "Vista";
+                    } else {
+                        if (!downloadLinkWin3210.isEmpty()) return "10";
+                        if (!downloadLinkWin3281.isEmpty()) return "8.1";
+                        if (!downloadLinkWin328.isEmpty()) return "8";
+                        if (!downloadLinkWin327.isEmpty()) return "7";
+                        if (!downloadLinkWin32Vista.isEmpty()) return "Vista";
+                    }
+                    return latestFound;
+                case "Vista":
+                    if (is64) {
+                        if (!downloadLinkWin6410.isEmpty()) return "10";
+                        if (!downloadLinkWin6481.isEmpty()) return "8.1";
+                        if (!downloadLinkWin648.isEmpty()) return "8";
+                        if (!downloadLinkWin647.isEmpty()) return "7";
+                    } else {
+                        if (!downloadLinkWin3210.isEmpty()) return "10";
+                        if (!downloadLinkWin3281.isEmpty()) return "8.1";
+                        if (!downloadLinkWin328.isEmpty()) return "8";
+                        if (!downloadLinkWin327.isEmpty()) return "7";
+                    }
+                    return latestFound;
+                case "7":
+                    if (is64) {
+                        if (!downloadLinkWin6410.isEmpty()) return "10";
+                        if (!downloadLinkWin6481.isEmpty()) return "8.1";
+                        if (!downloadLinkWin648.isEmpty()) return "8";
+                    } else {
+                        if (!downloadLinkWin3210.isEmpty()) return "10";
+                        if (!downloadLinkWin3281.isEmpty()) return "8.1";
+                        if (!downloadLinkWin328.isEmpty()) return "8";
+                    }
+                    return latestFound;
+                case "8":
+                    if (is64) {
+                        if (!downloadLinkWin6410.isEmpty()) return "10";
+                        if (!downloadLinkWin6481.isEmpty()) return "8.1";
+                    } else {
+                        if (!downloadLinkWin3210.isEmpty()) return "10";
+                        if (!downloadLinkWin3281.isEmpty()) return "8.1";
+                    }
+                    return latestFound;
+                case "8.1":
+                    if (is64) {
+                        if (!downloadLinkWin6410.isEmpty()) return "10";
+                    } else {
+                        if (!downloadLinkWin3210.isEmpty()) return "10";
+                    }
+                    return latestFound;
+            }
+            if (is64) {
+                if (!downloadLinkWin6410.isEmpty()) return "10";
+                if (!downloadLinkWin6481.isEmpty()) return "8.1";
+                if (!downloadLinkWin648.isEmpty()) return "8";
+                if (!downloadLinkWin647.isEmpty()) return "7";
+                if (!downloadLinkWin64Vista.isEmpty()) return "Vista";
+            } else {
+                if (!downloadLinkWin3210.isEmpty()) return "10";
+                if (!downloadLinkWin3281.isEmpty()) return "8.1";
+                if (!downloadLinkWin328.isEmpty()) return "8";
+                if (!downloadLinkWin327.isEmpty()) return "7";
+                if (!downloadLinkWin32Vista.isEmpty()) return "Vista";
+            }
+            return latestFound;
         }
     }
 }

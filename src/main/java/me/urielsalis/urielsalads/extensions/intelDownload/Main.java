@@ -103,7 +103,7 @@ public class Main {
                                     System.out.println("Error processing " + href);
                                 }
                                 System.out.println("Thread " + Thread.currentThread().getName() + " of " +  Thread.activeCount() + ": " + name + " - " + epmID);
-                                Intel.Driver driver = new Intel.Driver(name, epmID);
+                                Intel.Driver driver = new Intel.Driver(name.replace("Graphics Drivers for ", ""), epmID);
                                 Main.addDriver(driver);
                                 return null;
                             }

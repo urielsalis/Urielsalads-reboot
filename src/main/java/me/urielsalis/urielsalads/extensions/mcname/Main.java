@@ -63,7 +63,7 @@ public class Main {
 
             String result = findInfo(s, extended, false, 0);
             if(result==null || result.isEmpty()) {
-                result = findInfo(s, extended, true, unixTimestamp-2500); //2500 seems to always work, get previous name
+                result = findInfo(s, extended, true, unixTimestamp-2505600); //2500 seems to always work, get previous name
                 if(result==null || result.isEmpty()) {
                     result = findInfo(s, extended, true, 0); //get original name
                     if (result==null || result.isEmpty()) return ChatFormat.RED+"Username doesn't exists"+ChatFormat.NORMAL;

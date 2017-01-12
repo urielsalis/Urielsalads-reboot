@@ -245,9 +245,9 @@ public class Main {
                 if (showMessage2) {
                     me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html");
                     showMessage2 = false;
+                    return;
                 }
                 else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html";
-
             }
             for (Config.GPU gpu : DownloadMain.config.list) {
                 if (contains(gpu.name, card) && showMessage) {

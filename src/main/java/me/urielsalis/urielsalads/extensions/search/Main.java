@@ -151,6 +151,10 @@ public class Main {
         //ark.intel.com
         String[] strs = tmp.split("\\s+");
         String cpu = null;
+        if(tmp.contains("Atom")) {
+            me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.GREEN + "Ark: " + ChatFormat.NORMAL + "Atom CPUs dont meet the minimum requirements");
+            return;
+        }
         for(String str: strs) {
             if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {
                 if(str.charAt(0)=='Q' || str.charAt(0)=='E' || str.charAt(0)=='T' || str.charAt(0)=='L') continue;

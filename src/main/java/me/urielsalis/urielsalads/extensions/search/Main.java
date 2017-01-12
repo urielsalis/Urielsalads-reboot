@@ -225,6 +225,14 @@ public class Main {
         String latestFound = "";
         if (!card.contains("Standard VGA") && !card.contains("Microsoft Basic")) {
             card = resolveWrong(card.replace("NVIDIA ", "").replace("(R)", "").replace("AMD ", "").replace("®", "").trim());
+            if(card.equals("Intel HD Graphics")) {
+                if (showMessage2) {
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html");
+                    showMessage2 = false;
+                }
+                else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html";
+
+            }
             for (Config.GPU gpu : DownloadMain.config.manual) {
                 if (contains(gpu.name, card) && showMessage) {
                     String download = gpu.getDownload(minified, is64);

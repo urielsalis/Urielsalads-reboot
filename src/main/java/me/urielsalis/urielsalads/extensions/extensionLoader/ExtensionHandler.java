@@ -52,7 +52,7 @@ public class ExtensionHandler {
             e.printStackTrace();
         }
         loadJars();
-        Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath());
+        Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath()).addUrls(ClassPathHacker.getURLs());
 
         Reflections reflections = new Reflections(configuration);
         Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Extension.class);
@@ -68,8 +68,8 @@ public class ExtensionHandler {
 
     public static Extension loadJAR(String jar, String id) {
         try {
-            ClassPathHacker.addFile(new File(jar));
-            Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath());
+            ClassPathHacker.addFile(new File("extensions/"+jar));
+            Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath()).addUrls(ClassPathHacker.getURLs());
             Reflections reflections = new Reflections(configuration);
             Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Extension.class);
             for(Class clazz: annotated) {

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /*
 UrielSalads
@@ -26,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 public class ClassPathHacker {
     private static final Class[] parameters = new Class[]{URL.class};
+    private static ArrayList<URL> urls = new ArrayList<>();
 
     public static void addFile(String s) throws IOException {
         File f = new File(s);
@@ -40,7 +43,7 @@ public class ClassPathHacker {
 
         URLClassLoader sysloader = (URLClassLoader) ClassLoader.getSystemClassLoader();
         Class sysclass = URLClassLoader.class;
-
+        urls.add(u);
         try {
             Method method = sysclass.getDeclaredMethod("addURL", parameters);
             method.setAccessible(true);
@@ -49,5 +52,9 @@ public class ClassPathHacker {
             t.printStackTrace();
             throw new IOException("Error, could not add URL to system classloader");
         }
+    }
+
+    public static Collection<URL> getURLs() {
+        return urls;
     }
 }

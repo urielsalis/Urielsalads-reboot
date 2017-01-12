@@ -21,9 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import com.ircclouds.irc.api.Callback;
 import com.ircclouds.irc.api.domain.IRCChannel;
-import com.sun.deploy.util.StringUtils;
 import me.urielsalis.urielsalads.extensions.ExtensionAPI;
 import net.engio.mbassy.listener.Handler;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 

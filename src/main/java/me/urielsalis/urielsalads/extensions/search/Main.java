@@ -87,6 +87,12 @@ public class Main {
                     }
                     DownloadMain.writeJSON();
                     break;
+                case "manual":
+                    String[] arguments2 = arrayToString(command.getArgs()).split("\\|");
+                    if(arguments2.length < 2) return;
+                    boolean is64 = arguments2[2].equals("64");
+                    findDriver(arguments2[0], arguments2[1], is64, command.getChannel(), true);
+                    break;
             }
         }
 
@@ -148,6 +154,11 @@ public class Main {
         for(String str: strs) {
             if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {
                 if(str.charAt(0)=='Q' || str.charAt(0)=='E' || str.charAt(0)=='T' || str.charAt(0)=='L') continue;
+                if(str.charAt(0)=='N' && str.charAt(1)=='3') {
+                    String message = findDriver("ARK_N3Series", minified, is64, channel, false);
+                    me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.GREEN + "Ark: " + ChatFormat.NORMAL + message);
+                    return;
+                }
                 cpu = str;
                 break;
             }
@@ -179,6 +190,7 @@ public class Main {
         String minified = "";
         boolean is64 = false;
         for(String str: s.trim().split(" ")) {
+            str = str.replace("https", "http");
             if(str.contains("paste.ubuntu.com")) {
                 try {
                     Document document = Jsoup.parse(new URL(str), 10000);
@@ -220,8 +232,10 @@ public class Main {
                         latestFound = gpu.getLatest(latestFound, is64);
                         continue;
                     }
-                    if (showMessage2)
+                    if (showMessage2) {
                         me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download);
+                        showMessage2 = false;
+                    }
                     else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download;
                     showMessage = false;
                     break;
@@ -234,8 +248,10 @@ public class Main {
                         latestFound = gpu.getLatest(latestFound, is64);
                         continue;
                     }
-                    if (showMessage2)
+                    if (showMessage2) {
                         me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download);
+                        showMessage2 = false;
+                    }
                     else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + download;
                     showMessage = false;
                     return null;
@@ -245,8 +261,10 @@ public class Main {
             if (showMessage2)
                 if (latestFound.isEmpty()) {
                     me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not Found - Perform Manual Check");
+                    showMessage2 = false;
                 } else {
                     me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.RED + "Downgrade to Windows " + latestFound + ChatFormat.NORMAL);
+                    showMessage2 = false;
                 }
             else {
                 if(latestFound.isEmpty()) {
@@ -256,7 +274,7 @@ public class Main {
                 }
             }
         }
-        me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not Found - Perform Manual Check");
+        if(showMessage2) me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, "Not Found - Perform Manual Check");
         return "Not Found - Perform Manual Check";
     }
 

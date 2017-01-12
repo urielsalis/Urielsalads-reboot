@@ -1,7 +1,6 @@
 package me.urielsalis.urielsalads.extensions.irc;
 
 import com.ircclouds.irc.api.IRCApiImpl;
-import com.sun.deploy.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;

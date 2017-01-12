@@ -66,6 +66,26 @@ public class ExtensionHandler {
         initEvents();
     }
 
+    public static Extension loadJAR(String jar, String id) {
+        try {
+            ClassPathHacker.addFile(new File(jar));
+            Configuration configuration = new ConfigurationBuilder().addUrls(ClasspathHelper.forJavaClassPath());
+            Reflections reflections = new Reflections(configuration);
+            Set<Class<?>> annotated = reflections.getTypesAnnotatedWith(Extension.class);
+            for(Class clazz: annotated) {
+                ExtensionAPI.ExtensionData data = new ExtensionAPI.ExtensionData( (Extension) clazz.getAnnotation(Extension.class), clazz);
+                if(data.extension.id().equals(id)) extensions.add(data);
+                System.out.println("Loading " + data.extension.id());
+                loadExtension(data);
+                System.out.println(data.extension.id() + " Loaded");
+                return data.extension;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private static void initEvents() {
         try {
             api.registerEvent("loadExtension");
@@ -247,6 +267,10 @@ public class ExtensionHandler {
         } else {
             System.out.println("No extensions to load");
         }
+    }
+
+    public static void unloadAll() {
+
     }
 
     /*public static void initModules() {

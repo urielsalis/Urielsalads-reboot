@@ -1,5 +1,6 @@
 package me.urielsalis.urielsalads.extensions;
 
+import me.urielsalis.urielsalads.extensions.extensionLoader.ExtensionHandler;
 import net.engio.mbassy.bus.IMessagePublication;
 import net.engio.mbassy.bus.MBassador;
 import net.engio.mbassy.bus.error.IPublicationErrorHandler;
@@ -99,6 +100,9 @@ public class ExtensionAPI {
         }
     }
 
+    public Extension getExtentionJar(String nameofJar, String id) {
+        return ExtensionHandler.loadJAR(nameofJar, id);
+    }
 
     public interface Listener {
         String name();

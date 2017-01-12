@@ -113,6 +113,14 @@ public class Main {
                 case "loadExtension": {
                     String name;
                     String version = null;
+                    if(channel.contains(".jar")) {
+                        String[] args = channel.split("\\|");
+                        try {
+                            extapi.fire("loadExtension", extapi.getExtentionJar(args[0], args[1]));
+                        } catch (ExtensionAPI.EventDoesntExistsException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     if (channel.contains("/")) {
                         String[] extensionData = channel.split("/");
                         name = extensionData[0];

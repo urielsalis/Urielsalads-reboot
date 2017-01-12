@@ -153,7 +153,6 @@ public class Main {
         String cpu = null;
         if(tmp.contains("Atom")) {
             me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.GREEN + "Ark: " + ChatFormat.NORMAL + "Atom CPUs dont meet the minimum requirements");
-            return;
         }
         for(String str: strs) {
             if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {

@@ -154,7 +154,7 @@ public class Main {
         for(String str: strs) {
             if(Character.isLetter(str.charAt(0)) && Character.isDigit(str.charAt(1))) {
                 if(str.charAt(0)=='Q' || str.charAt(0)=='E' || str.charAt(0)=='T' || str.charAt(0)=='L') continue;
-                if(str.charAt(0)=='N' && str.charAt(1)=='3') {
+                if(str.charAt(0)=='N' && str.charAt(1)=='3' && !(str.startsWith("N3540"))) {
                     String message = findDriver("ARK_N3Series", minified, is64, channel, false);
                     me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.GREEN + "Ark: " + ChatFormat.NORMAL + message);
                     return;
@@ -245,7 +245,7 @@ public class Main {
                 if (showMessage2) {
                     me.urielsalis.urielsalads.extensions.irc.Main.api.message(channel, ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html");
                     showMessage2 = false;
-                    return;
+                    return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html";
                 }
                 else return ChatFormat.BLUE + card + ": " + ChatFormat.NORMAL + "Do Manual check: https://www-ssl.intel.com/content/www/us/en/support/graphics-drivers/000005526.html";
             }
